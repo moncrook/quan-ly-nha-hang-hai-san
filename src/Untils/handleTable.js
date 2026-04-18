@@ -48,12 +48,19 @@ export const handleDeleteProduct = (products, productId) => {
 
 // Hàm lấy danh sách các bàn đang trống
 export const getBooker = (allTables) => {
-    return allTables.filter(t => t.status === 'booker');
+    return allTables.filter(t => t.status === 'reserved');
 };
 
 // Hàm xử lý đặt bàn (Chuyển từ Trống sang Đã đặt/Có khách)
 export const handleBookingLogic = (allTables, tableId) => {
     return allTables.map(t => 
         t.id === tableId ? { ...t, status: 'booker' } : t
+    );
+};
+
+// Hàm xử lý hủy đặt bàn 
+export const HuyDatBanLogic = (allTables, tableId) => {
+    return allTables.map(t => 
+        t.id === tableId ? { ...t, status: 'available' } : t
     );
 };

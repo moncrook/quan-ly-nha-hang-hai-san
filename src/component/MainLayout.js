@@ -5,7 +5,8 @@ import {
     MenuFoldOutlined, 
     DesktopOutlined, 
     CoffeeOutlined, 
-    UserOutlined 
+    UserOutlined,
+    FileTextOutlined 
 } from '@ant-design/icons';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -30,8 +31,9 @@ const MainLayout = ({ children }) => {
                         { key: '1', icon: <DesktopOutlined />, label: <Link to="/table">Sơ đồ bàn</Link> },
                         { key: '2', icon: <CoffeeOutlined />, label: <Link to="/products">Quản Lý Thực Đơn</Link> },
                         { key: '3', icon: <CoffeeOutlined />, label: <Link to="/booking">Quản Lý Đặt Bàn</Link> },
-                        { key: '4', icon: <CoffeeOutlined />, label: <Link to="/otherFunc">chức năng khác</Link> },
-                        { key: '5', icon: <UserOutlined />, label: <Link to="/login" onClick={() => localStorage.clear()}>Đăng xuất</Link> },
+                        { key: '4', icon: <FileTextOutlined />, label: <Link to="/bills">Quản Lý Hóa Đơn</Link> },
+                        { key: '5', icon: <CoffeeOutlined />, label: <Link to="/otherFunc">chức năng khác</Link> },
+                        { key: '6', icon: <UserOutlined />, label: <Link to="/login" onClick={() => localStorage.clear()}>Đăng xuất</Link> },
                     ]}
                 />
             </Sider>

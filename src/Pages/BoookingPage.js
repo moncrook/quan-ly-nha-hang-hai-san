@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Row, Col, Card, Button, Tag, Empty, message, Typography, Modal } from 'antd';
+import { Row, Col, Card, Button, Tag, Empty, message, Typography, Modal, Descriptions } from 'antd';
 import { CheckCircleOutlined, ShopOutlined } from '@ant-design/icons';
-import { getBooker, handleBookingLogic } from '../Untils/handleTable';
+import { getBooker, handleBookingLogic, HuyDatBanLogic } from '../Untils/handleTable';
 
 const { Title, Text } = Typography;
 
@@ -15,8 +15,9 @@ const BookingPage = ({ tableData, setTableData }) => {
     const [cart, setCart] = useState([]);
 
     const handleclickTable=(item)=>{
-        selectedTable(item);
-        setBookingTable(true)
+        setSelectedTable(item);      // Lưu bàn được chọn
+        setSelectedBooking(item);    // Lưu thông tin để hiển thị Descriptions
+        setBookingTable(true);       // Mở Modal
     }
 
     useEffect(() => {
@@ -27,7 +28,21 @@ const BookingPage = ({ tableData, setTableData }) => {
         const updated = handleBookingLogic(tableData, tableId);
         setBookingTable(true)
         setTableData(updated);
-        message.success(`Đã xác nhận đặt ${tableName} thành công!`);
+        // message.success(`Đã xác nhận đặt ${tableName} thành công!`);
+    };
+// Hủy đạt bàn
+    const HuyDatBan=(item)=>{
+        const update=HuyDatBanLogic(tableData, item.id);
+        setTableData(update);
+        message.success(`Đã xác nhận hủy đặt ${item.name} thành công!`);
+    }
+
+    const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+    const [selectedBooking, setSelectedBooking] = useState(null);
+
+    const handleShowBookingDetail = (tableItem) => {
+        setSelectedBooking(tableItem);
+        setIsDetailModalOpen(true);
     };
 
     return (
@@ -44,12 +59,18 @@ const BookingPage = ({ tableData, setTableData }) => {
                                 extra={<Tag color="red">Bàn đã đặt</Tag>}
                                 actions={[
                                     <Button 
+                                        // type="primary"   
+                                        icon={<CheckCircleOutlined />} 
+                                        onClick={() => HuyDatBan(item)}
+                                    >
+                                        Hủy
+                                    </Button>,
+                                    <Button 
                                         type="primary" 
                                         icon={<CheckCircleOutlined />} 
-                                        //  hoverable onClick={() => handleclickTable(item)}
-                                        onClick={() => confirmBooking(item.id, item.name)}
+                                        onClick={() => handleclickTable(item)}
                                     >
-                                        Xác nhận đặt
+                                        Chi tiết
                                     </Button>
                                 ]}
                             >
@@ -64,14 +85,34 @@ const BookingPage = ({ tableData, setTableData }) => {
                     </Col>
                 )}
             </Row>
-
             <Modal 
-                title={`Bạn có chắc muốn đặt bàn này không - ${selectedTable?.name}`}
+                title={`Thông tin chi tiết bàn đã đặt - ${selectedBooking?.name}`}
                 open={bookingTable}
                 onCancel={() => setBookingTable(false)}
                 centered
+                footer={null} // ❗ tắt nút mặc định (OK, Cancel)
             >
-
+                {selectedBooking?.bookingInfo ? (
+                    <Descriptions bordered column={1} size="small">
+                        <Descriptions.Item label="Tên khách hàng">
+                            <b>{selectedBooking.bookingInfo.customerName}</b>
+                        </Descriptions.Item>
+                        <Descriptions.Item label="Số điện thoại">
+                            {selectedBooking.bookingInfo.phone}
+                        </Descriptions.Item>
+                        <Descriptions.Item label="Giờ hẹn">
+                            <Tag color="blue">{selectedBooking.bookingInfo.arrivalTime}</Tag>
+                        </Descriptions.Item>
+                        <Descriptions.Item label="Số lượng khách">
+                            {selectedBooking.bookingInfo.guestCount || selectedBooking.capacity} người
+                        </Descriptions.Item>
+                        <Descriptions.Item label="Ghi chú">
+                            {selectedBooking.bookingInfo.note || "Không có ghi chú"}
+                        </Descriptions.Item>
+                    </Descriptions>
+                ) : (
+                    <Empty description="Không tìm thấy thông tin đặt bàn" />
+                )}
             </Modal>
         </div>
     );
