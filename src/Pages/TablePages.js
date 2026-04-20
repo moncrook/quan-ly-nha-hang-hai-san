@@ -431,13 +431,7 @@ const handleConfirmPayment = () => {
                     okButtonProps={{ disabled: customerCash < (billData?.total || 0) }}
                 >
                     <div style={{ padding: '10px 0' }}>
-                        {/* <p>Tổng tiền cần thanh toán: <b>{billData?.total?.toLocaleString()}đ</b></p> */}
-
-                        <div style={{ borderTop: '1px dashed #000', marginTop: '10px', paddingTop: '10px' }}>
-                            <p>Tạm tính: {billData?.subTotal?.toLocaleString()}đ</p>
-                            <p>Giảm giá: {billData?.discount || 0}% (-{ (billData?.subTotal * billData.discount / 100).toLocaleString() }đ)</p>
-                            <Title level={3} textAlign="right">TỔNG CỘNG: {billData?.total?.toLocaleString()}đ</Title>
-                        </div>
+                        <p>Tổng tiền cần thanh toán: <b>{billData?.total?.toLocaleString()}đ</b></p>
                         
                         <div style={{ marginBottom: '15px' }}>
                             <label>Tiền khách đưa:</label>
