@@ -14,7 +14,10 @@ const ProductPage = () => {
     const [editingProduct, setEditingProduct] = useState(null);
     const [form] = Form.useForm();
 
-    
+        //Tìm kiếm món ăn
+        const [searchText, setSearchText] = useState('');
+
+        // chỉ định theo loại
         const [selectedCategory, setSelectedCategory] = useState('Tất cả');
         const categories = ['Tất cả', 'Tôm', 'Cua', 'Mực', 'Ốc', 'Lẩu', 'Nước uống'];
 
@@ -89,11 +92,21 @@ const ProductPage = () => {
                                 size="large"
                                 enterButton
                                 allowClear
+                                onChange={(e) => setSearchText(e.target.value)} // Cập nhật từ khóa khi gõ
+                                onSearch={(value) => setSearchText(value)} // Cập nhật khi bấm nút kính lúp
                             />
                         </div>
 
                         <Table 
-                            dataSource={products.filter(p => selectedCategory === 'Tất cả' || p.category === selectedCategory)} 
+                            dataSource={products.filter(food => {
+                                // selectedCategory === 'Tất cả' || p.category === selectedCategory
+                                const matchCategory = selectedCategory === 'Tất cả' || food.category === selectedCategory;
+                                
+                                // 2. Lọc theo Tên món (Search Text) - Chuyển cả hai về chữ thường để so sánh chính xác
+                                const matchSearch = food.name.toLowerCase().includes(searchText.toLowerCase());
+                                
+                                return matchCategory && matchSearch;
+                            })} 
                             columns={columns} 
                             rowKey="id" 
                             bordered

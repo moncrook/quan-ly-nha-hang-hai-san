@@ -81,7 +81,7 @@ const BookingPage = ({ tableData, setTableData }) => {
                     ))
                 ) : (
                     <Col span={24}>
-                        <Empty description="Hiện tại không còn bàn nào trống!" />
+                        <Empty description="Hiện tại không có bàn đặt!" />
                     </Col>
                 )}
             </Row>

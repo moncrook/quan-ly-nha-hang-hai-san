@@ -4,7 +4,7 @@ import { Row, InputNumber,
      Col,Card,Tag,Button, Drawer, Input, List, Avatar, message, 
      Popconfirm, Typography, Modal, Menu,Dropdown, Form  } from 'antd';
 
-import { PlusOutlined, MinusOutlined, DeleteOutlined,
+import { PlusOutlined, MinusOutlined, DeleteOutlined, MoneyCollectOutlined, QrcodeOutlined,
      MoreOutlined } from '@ant-design/icons';
      
 import { menuSeafood, addToCartLogic, calculateTotal, updateQuantityLogic,
@@ -38,6 +38,15 @@ const TablePage = ({table,setTable, setBillHistory}) => {
     const [discount, setDiscount] = useState(0); // Phần trăm giảm giá (0-100)
     const [customerCash, setCustomerCash] = useState(0); // Tiền khách đưa
 
+    //Tìm kiếm món ăn
+    const [searchText, setSearchText] = useState('');
+
+    //chọn phuowngh thức thanh toán
+    const [methodModalOpen, setMethodModalOpen]=useState(false)
+
+    // modal thanh toán bằng tiền mặt
+    const [tienMatModalOpen, setTienMatModalOpen]=useState(false)
+
     
 const menuItems = [
   {
@@ -67,10 +76,6 @@ const menuItems = [
         setBookingTableOpen(true);
     }
 
-    const thongTinDatBan=()=>{
-
-    }
-
     const showActionModal = () => {
         setIsActionModalOpen(true);
     };
@@ -80,7 +85,7 @@ const menuItems = [
         const hasItems = cart.length>0;
 
         const updated = table.map(t => {
-        if (t.id === selectedTable.id) {
+        if (t.id === selectedTable?.id) {
             // Xác định trạng thái mới:
             // Nếu giỏ hàng có món -> occupied (Có khách)
             // Nếu giỏ hàng trống -> giữ nguyên status cũ (available hoặc reserved)
@@ -97,7 +102,7 @@ const menuItems = [
             setTable(updated);
 
             if (hasItems) {
-                message.success(`Đã chuyển ${selectedTable.name} sang trạng thái có khách!`);
+                message.success(`Đã chuyển ${selectedTable?.name} sang trạng thái có khách!`);
             } else {
                 message.info("Đã cập nhật (Bàn chưa có món ăn)");
             }
@@ -115,13 +120,33 @@ const handleRemoveItem = (foodId) => {
     message.info("Đã xóa món");
 };
 
-    const onPayment = (tableId) => {
-        const updated = table.map(t => t.id === tableId ? { ...t, status: 'available', orderItems: [] } : t);
-        setTable(updated);
-        setCart([]);
-        setOpen(false);
-        message.success("Bàn đã thanh toán!");
-    };
+const handleThanhToan = () => {
+
+    const newBill={...billData,id: Date.now()};
+    
+    // 1. Cập nhật dữ liệu bàn về trạng thái trống (Dùng tableData từ Props)
+    const updatedTables = table.map(t => 
+        t.id === selectedTable?.id ? { ...t, status: 'available', orderItems: [] } : t
+    );
+
+    setBillHistory(prev => [newBill,...prev])
+    setTable(updatedTables);
+
+    // 1. Thực hiện logic lưu Database / Cập nhật trạng thái bàn ở đây
+    console.log("Đã thanh toán cho bàn:", selectedTable.name);
+
+
+    // 2. Đóng toàn bộ các Modal
+    setTienMatModalOpen(false);
+    setMethodModalOpen(false);
+    setIsBillModalOpen(false);
+    setOpen(false);
+    
+    // 3. Reset lại tiền khách đưa cho lần sau
+    setCustomerCash(0);
+    
+    message.success("Thanh toán thành công!");
+};
 
 const ChuyenBan= (tuBan, denBan)=>{
     const updateTable=table.map(t =>{
@@ -148,13 +173,13 @@ const ChuyenBan= (tuBan, denBan)=>{
 const handleShowBill = () => {
     const finalTotal = calculateTotal(cart) * (1 - discount/100);
     const data = {
-        tableName: selectedTable.name,
+        tableName: selectedTable?.name,
         items: cart,
         subTotal: calculateTotal(cart),
         discount: discount,
         total: finalTotal,
         time: new Date().toLocaleString('vi-VN'),
-        staff: "Phan Xuân Nhạn"
+        staff: "Phan Xuân Nhẫn"
     };
     setBillData(data);
     setIsBillModalOpen(true);
@@ -215,13 +240,11 @@ const handlePrintBill = () =>{
 
 // 4. Khi xác nhận in hóa đơn xong
 const handleConfirmPayment = () => {
-
-    
     const newBill={...billData,id: Date.now()};
     
     // 1. Cập nhật dữ liệu bàn về trạng thái trống (Dùng tableData từ Props)
     const updatedTables = table.map(t => 
-        t.id === selectedTable.id ? { ...t, status: 'available', orderItems: [] } : t
+        t.id === selectedTable?.id ? { ...t, status: 'available', orderItems: [] } : t
     );
 
     setBillHistory(prev => [newBill,...prev])
@@ -230,6 +253,8 @@ const handleConfirmPayment = () => {
     setIsBillModalOpen(false);   // Đóng modal hóa đơn
     setIsActionModalOpen(false); // Đảm bảo modal lựa chọn đã đóng
     setOpen(false);              // Đóng drawer nếu đang mở
+    setTienMatModalOpen(false);
+    setMethodModalOpen(false)
 
     message.success("Thanh toán thành công và đã in hóa đơn!");
 
@@ -243,7 +268,14 @@ const handleConfirmPayment = () => {
                 {table.map(item => (
                     <Col span={6} key={item.id}>
                         <Card hoverable 
-                            onClick={() => {item.status === 'occupied' ? setOpen(true) : handleTableClick(item) }} 
+                            onClick={() => {
+                                if (item.status === 'occupied') {
+                                    setSelectedTable(item); // Cập nhật bàn trước
+                                    setCart(item.orderItems || []); // Cập nhật món ăn cũ vào giỏ
+                                    setOpen(true); // Mới mở Drawer
+                                } else {
+                                    handleTableClick(item);
+                                } }} 
                              style={{
                                 borderLeft: 
                                     item.status === 'available'
@@ -304,44 +336,212 @@ const handleConfirmPayment = () => {
                     onCancel={() => setIsBillModalOpen(false)}
                     footer={[
                         <Button key="back" onClick={() => setIsBillModalOpen(false)}>Quay lại</Button>,
-                        <Button key="pay" type="primary" onClick={handleConfirmPayment} disabled={customerCash < billData?.total}>
-                            Xác nhận thanh toán
+                        <Button 
+                            key="pay" 
+                            type="primary" 
+                            danger
+                            onClick={() => setMethodModalOpen(true)} 
+                            // Chỉ cho bấm Thanh toán khi khách đưa đủ tiền
+                            // disabled={!customerCash || customerCash < (billData?.total || 0)}
+                        >
+                            Thanh Toán
+                        </Button>,
+                        <Button
+                            onClick={handlePrintBill}
+                        >
+                            In hóa đơn tạm tính
                         </Button>
                     ]}
                 >
                     {billData && (
                         <div>
+                            <table style={{ width: '100%', borderTop: '1px dashed #000', paddingTop: '10px' }}>
+                                <thead>
+                                    <tr style={{ textAlign: 'left' }}>
+                                        <th>Món</th>
+                                        <th>SL</th>
+                                        <th style={{ textAlign: 'right' }}>T.Tiền</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {billData.items.map(item => (
+                                        <tr key={item.id}>
+                                            <td>{item.name}</td>
+                                            <td>{item.qty}</td>
+                                            <td style={{ textAlign: 'right' }}>{(item.price * item.qty).toLocaleString()}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+
                             {/* Nội dung hóa đơn cũ của bạn */}
                             <div style={{ borderTop: '1px dashed #000', marginTop: '10px', paddingTop: '10px' }}>
-                                <p>Tạm tính: {billData.subTotal.toLocaleString()}đ</p>
-                                <p>Giảm giá: {billData.discount}% (-{ (billData.subTotal * billData.discount / 100).toLocaleString() }đ)</p>
-                                <Title level={3} textAlign="right">TỔNG CỘNG: {billData.total.toLocaleString()}đ</Title>
-                            </div>
-
-                            {/* PHẦN TÍNH TIỀN THỐI */}
-                            <div style={{ marginTop: '20px', padding: '15px', background: '#e6f7ff', borderRadius: '8px' }}>
-                                <div style={{ marginBottom: '10px' }}>
-                                    <Text strong>Tiền khách đưa:</Text>
-                                    <InputNumber
-                                        style={{ width: '100%' }}
-                                        size="large"
-                                        formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                                        parser={value => value.replace(/\$\s?|(,*)/g, '')}
-                                        onChange={(val) => setCustomerCash(val || 0)}
-                                    />
-                                </div>
-                                <div>
-                                    <Text strong>Tiền thối lại:</Text>
-                                    <Title level={4} style={{ color: '#52c41a', margin: 0 }}>
-                                        {customerCash - billData.total > 0 
-                                            ? (customerCash - billData.total).toLocaleString() 
-                                            : 0}đ
-                                    </Title>
-                                </div>
+                                <p>Tạm tính: {billData?.subTotal?.toLocaleString()}đ</p>
+                                <p>Giảm giá: {billData?.discount || 0}% (-{ (billData?.subTotal * billData.discount / 100).toLocaleString() }đ)</p>
+                                <Title level={3} textAlign="right">TỔNG CỘNG: {billData?.total.toLocaleString()}đ</Title>
                             </div>
                         </div>
                     )}
                 </Modal>
+                                
+                                {/* 1. MODAL CHỌN PHƯƠNG THỨC */}
+                <Modal
+                    title="CHỌN PHƯƠNG THỨC THANH TOÁN"
+                    open={methodModalOpen}
+                    onCancel={() => setMethodModalOpen(false)}
+                    footer={null}
+                    centered
+                >
+                    <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', padding: '20px 0' }}>
+                        <Button 
+                            size="large" 
+                            type="primary" 
+                            icon={<MoneyCollectOutlined />} 
+                            onClick={() => {
+                                setMethodModalOpen(false);
+                                setTienMatModalOpen(true);
+                            }}
+                        >
+                            TIỀN MẶT
+                        </Button>
+                        <Button 
+                            size="large" 
+                            type="primary" 
+                            ghost
+                            icon={<QrcodeOutlined />}
+                            onClick={() => {
+                                // Logic xử lý chuyển khoản ở đây
+                                handleThanhToan(); 
+                            }}
+                        >
+                            CHUYỂN KHOẢN (QR)
+                        </Button>
+                    </div>
+                </Modal>
+
+                {/* 2. MODAL NHẬP TIỀN MẶT & TÍNH TIỀN THỐI */}
+                <Modal
+                    title="THANH TOÁN TIỀN MẶT"
+                    open={tienMatModalOpen}
+                    onCancel={() => setTienMatModalOpen(false)}
+                    onOk={handleThanhToan}
+                    okText="Xác nhận thanh toán"
+                    cancelText="Quay lại"
+                    // Chỉ cho xác nhận khi khách đưa đủ tiền
+                    okButtonProps={{ disabled: customerCash < (billData?.total || 0) }}
+                >
+                    <div style={{ padding: '10px 0' }}>
+                        {/* <p>Tổng tiền cần thanh toán: <b>{billData?.total?.toLocaleString()}đ</b></p> */}
+
+                        <div style={{ borderTop: '1px dashed #000', marginTop: '10px', paddingTop: '10px' }}>
+                            <p>Tạm tính: {billData?.subTotal?.toLocaleString()}đ</p>
+                            <p>Giảm giá: {billData?.discount || 0}% (-{ (billData?.subTotal * billData.discount / 100).toLocaleString() }đ)</p>
+                            <Title level={3} textAlign="right">TỔNG CỘNG: {billData?.total?.toLocaleString()}đ</Title>
+                        </div>
+                        
+                        <div style={{ marginBottom: '15px' }}>
+                            <label>Tiền khách đưa:</label>
+                            <InputNumber
+                                style={{ width: '100%' }}
+                                formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                                parser={(value) => value.replace(/\$\s?|(,*)/g, '')}
+                                onChange={(value) => setCustomerCash(value || 0)}
+                                value={customerCash}
+                                autoFocus
+                                placeholder="Nhập số tiền khách đưa..."
+                            />
+                        </div>
+
+                        {customerCash > 0 && (
+                            <div style={{ padding: '10px', background: customerCash >= billData?.total ? '#f6ffed' : '#fff1f0', borderRadius: '8px' }}>
+                                <Title level={4} style={{ margin: 0, color: customerCash >= billData?.total ? '#52c41a' : '#f5222d' }}>
+                                    {customerCash >= billData?.total 
+                                        ? `Tiền thối lại: ${(customerCash - billData.total).toLocaleString()}đ` 
+                                        : `Còn thiếu: ${(billData.total - customerCash).toLocaleString()}đ`}
+                                </Title>
+                            </div>
+                        )}
+                    </div>
+                </Modal>
+
+                  {/* nhập số tiền khách đưa và trả lại */}
+                {/* <Modal 
+                    title={`Thanh toán bằng tiền mặt - ${selectedTable?.name}`}
+                    open={tienMatModalOpen}
+                    onCancel={() => setTienMatModalOpen(false)}
+                    centered
+                    footer={null} // ❗ tắt nút mặc định (OK, Cancel)
+                >
+                    
+                    <div style={{ marginTop: '20px', padding: '15px', background: '#e6f7ff', borderRadius: '8px' }}>
+                        
+                        <div style={{ borderTop: '1px dashed #000', marginTop: '10px', paddingTop: '10px' }}>
+                            <p>Tạm tính: {billData?.subTotal?.toLocaleString()}đ</p>
+                            <p>Giảm giá: {billData?.discount || 0}% (-{ (billData?.subTotal * billData.discount / 100).toLocaleString() }đ)</p>
+                            <Title level={3} textAlign="right">TỔNG CỘNG: {billData?.total?.toLocaleString()}đ</Title>
+                        </div>
+                        <div style={{ marginBottom: '10px' }}>
+                            <Text strong>Tiền khách đưa:</Text>
+                            <InputNumber
+                                style={{ width: '100%' }}
+                                size="large"
+                                formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                                parser={value => value.replace(/\$\s?|(,*)/g, '')}
+                                onChange={(val) => setCustomerCash(val || 0)}
+                            />
+                        </div>
+                        <div>
+                            <Text strong>Tiền thối lại:</Text>
+                            <Title level={4} style={{ color: '#52c41a', margin: 0 }}>
+                                {customerCash - billData?.total > 0 
+                                    ? (customerCash - billData?.total).toLocaleString() 
+                                    : 0}đ
+                            </Title>
+                        </div>
+                        <Button 
+                            type="primary" 
+                            danger 
+                            size="large" 
+                            style={{ flex: 1, height: '80px' }}
+                            // Chỉ cho bấm Thanh toán khi khách đưa đủ tiền
+                            disabled={!customerCash || customerCash < (billData?.total || 0)}
+                            onClick={handleThanhToan}
+                        >
+                            Xác nhận thanh toán & trả bàn
+                        </Button>
+                    </div>
+                </Modal>
+                 */}
+                    {/* Chọn phuong thức thanh toán */}
+                {/* <Modal
+                    title={`Hãy chọn phương thức thanh toán - ${selectedTable?.name}`}
+                    open={methodModalOpen}
+                    onCancel={() => setMethodModalOpen(false)}
+                    footer={null} // Không dùng nút mặc định của Modal
+                    centered
+                >
+                    <div style={{ display: 'flex', gap: '15px', padding: '20px 0' }}>
+                        <Button 
+                            type="primary" 
+                            size="large" 
+                            style={{ flex: 1, height: '80px', backgroundColor: '#faad14' }}
+                            onClick={() => setTienMatModalOpen(true)}
+                        >
+                            TIỀN MẶT
+                        </Button> 
+                        <Button 
+                            type="primary" 
+                            danger 
+                            size="large" 
+                            style={{ flex: 1, height: '80px' }}
+                            // disabled={selectedTable?.status==='reserved'}
+                            // onClick={selectedTable?.status==='reserved'? ()=>HuyDatBan(selectedTable) : handleDatBan }
+                        >
+                            CHUYỂN KHOẢN
+                        </Button>
+                    </div>
+                </Modal> */}
+                
                 <Modal 
                     title={`Thông tin đặt bàn - ${selectedTable?.name}`}
                     open={openBookingTable}
@@ -401,6 +601,9 @@ const handleConfirmPayment = () => {
                     placeholder='nhập món muốn tìm kiếm'
                     enterButton
                     size='Large'
+                    allowClear
+                    onChange={(e) => setSearchText(e.target.value)} // Cập nhật từ khóa khi gõ
+                    onSearch={(value) => setSearchText(value)} // Cập nhật khi bấm nút kính lúp
                 />
 
                     <Drawer 
@@ -469,7 +672,15 @@ const handleConfirmPayment = () => {
                     </Col>
                     <Col span={12}>
                         <Row gutter={[16, 16]}>
-                            {menuSeafood.filter(food => selectedCategory === 'Tất cả' || food.category === selectedCategory)
+                            {menuSeafood.filter(food => {
+                                // 1. Lọc theo Danh mục (Category)
+                                const matchCategory = selectedCategory === 'Tất cả' || food.category === selectedCategory;
+                                
+                                // 2. Lọc theo Tên món (Search Text) - Chuyển cả hai về chữ thường để so sánh chính xác
+                                const matchSearch = food.name.toLowerCase().includes(searchText.toLowerCase());
+                                
+                                return matchCategory && matchSearch;
+                            })
                             .map(food => (
                                 <Col span={12} key={food.id}>
                                     <Card size="small"
@@ -552,7 +763,7 @@ const handleConfirmPayment = () => {
                                 onClick={handleShowBill}
                                 disabled={cart.length === 0}
                             >
-                                XEM HÓA ĐƠN & THANH TOÁN
+                                XEM HÓA ĐƠN & THANH TOÁN    
                             </Button>
 
                             {/* <Button style={{width: '50%'}}

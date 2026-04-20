@@ -5,6 +5,7 @@ import { DollarCircleOutlined, FileTextOutlined, MoreOutlined } from '@ant-desig
 const { Title } = Typography;
 
 const BillsPage = ({billHistory})=>{
+    
     const totalRevenue = billHistory.reduce((sum, bill) => sum + bill.total, 0);
 
     const menuBills=[
@@ -33,6 +34,7 @@ const BillsPage = ({billHistory})=>{
         },
     ];
 
+    
     return (
         <div style={{ padding: '20px' }}>
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
