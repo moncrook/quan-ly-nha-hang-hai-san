@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
-import { Table, Button, Modal, Form, Input, InputNumber, Space, Popconfirm, message, Tag } from 'antd';
+import { Table, Button, Modal, Form, Input, InputNumber, Space, Popconfirm, message, Tag, Menu, Typography,
+        Row, Col, Card, Select
+ } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { menuSeafood, handleAddProduct, handleEditProduct, handleDeleteProduct } from '../Untils/handleTable';
+
+const { Title } = Typography;
 
 const ProductPage = () => {
     const [products, setProducts] = useState(menuSeafood);
@@ -9,6 +13,10 @@ const ProductPage = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingProduct, setEditingProduct] = useState(null);
     const [form] = Form.useForm();
+
+    
+        const [selectedCategory, setSelectedCategory] = useState('Tất cả');
+        const categories = ['Tất cả', 'Tôm', 'Cua', 'Mực', 'Ốc', 'Lẩu', 'Nước uống'];
 
     // Mở Modal để Thêm hoặc Sửa
     const showModal = (product = null) => {
@@ -52,42 +60,60 @@ const ProductPage = () => {
     ];
 
     return (
-        <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
-                <h2>📋 QUẢN LÝ THỰC ĐƠN</h2>
-                <Button type="primary" icon={<PlusOutlined />} onClick={() => showModal()}>Thêm món mới</Button>
+            <div style={{ padding: '10px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
+                    <Title level={2}>📋 QUẢN LÝ THỰC ĐƠN</Title>
+                    <Button type="primary" size="large" icon={<PlusOutlined />} onClick={() => showModal()}>
+                        Thêm món mới
+                    </Button>
+                </div>
+
+                <Row gutter={24}>
+                    {/* CỘT BÊN TRÁI: DANH MỤC LOẠI MÓN */}
+                    <Col span={5}>
+                        <Card title="Danh mục" size="small" bodyStyle={{ padding: 0 }}>
+                            <Menu
+                                mode="inline"
+                                selectedKeys={[selectedCategory]}
+                                onClick={(e) => setSelectedCategory(e.key)}
+                                items={categories.map(cat => ({ key: cat, label: cat }))}
+                            />
+                        </Card>
+                    </Col>
+
+                    {/* CỘT BÊN PHẢI: TÌM KIẾM VÀ BẢNG DỮ LIỆU */}
+                    <Col span={19}>
+                        <div style={{ marginBottom: 20 }}>
+                            <Input.Search
+                                placeholder={`Tìm kiếm trong loại ${selectedCategory}...`}
+                                size="large"
+                                enterButton
+                                allowClear
+                            />
+                        </div>
+
+                        <Table 
+                            dataSource={products.filter(p => selectedCategory === 'Tất cả' || p.category === selectedCategory)} 
+                            columns={columns} 
+                            rowKey="id" 
+                            bordered
+                            pagination={{ pageSize: 8 }}
+                        />
+                    </Col>
+                </Row>
+
+                {/* Modal Thêm/Sửa giữ nguyên như cũ của bạn */}
+                <Modal>
+                    <Form.Item name="category" label="Loại món" rules={[{ required: true, message: 'Hãy chọn loại món!' }]}>
+                        <Select placeholder="Chọn loại món">
+                            {categories.filter(c => c !== 'Tất cả').map(cat => (
+                                <Select.Option key={cat} value={cat}>{cat}</Select.Option>
+                            ))}
+                        </Select>
+                    </Form.Item>
+                </Modal>
             </div>
-
-            <div>
-                <Input.Search
-                    placeholder='hãy nhập món bạn muốn tìm vào đây'
-                    size='Large'
-                    enterButton
-                />
-            </div>
-
-            <Table dataSource={products} columns={columns} rowKey="id" />
-
-            <Modal 
-                title={editingProduct ? "Sửa món ăn" : "Thêm món mới"} 
-                open={isModalOpen} 
-                onOk={() => form.submit()} 
-                onCancel={() => setIsModalOpen(false)}
-            >
-                <Form form={form} layout="vertical" onFinish={handleSave}>
-                    <Form.Item name="name" label="Tên món ăn" rules={[{ required: true }]}>
-                        <Input placeholder="Ví dụ: Tôm hùm sốt bơ" />
-                    </Form.Item>
-                    <Form.Item name="category" label="Loại" rules={[{ required: true }]}>
-                        <Input placeholder="Ví dụ: Tôm, Cua, Cá..." />
-                    </Form.Item>
-                    <Form.Item name="price" label="Giá bán" rules={[{ required: true }]}>
-                        <InputNumber style={{ width: '100%' }} formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')} />
-                    </Form.Item>
-                </Form>
-            </Modal>
-        </div>
-    );
+        );
 };
 
 export default ProductPage;

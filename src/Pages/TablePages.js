@@ -1,22 +1,29 @@
 import React, { useState } from 'react';
-import { Row,
-     Col,
-      Card,
-       Tag,
-        Button, Drawer, Input, List, Avatar, message, Popconfirm, Typography, Modal, Menu,Dropdown, Form  } from 'antd';
+
+import { Row, InputNumber, 
+     Col,Card,Tag,Button, Drawer, Input, List, Avatar, message, 
+     Popconfirm, Typography, Modal, Menu,Dropdown, Form  } from 'antd';
+
 import { PlusOutlined, MinusOutlined, DeleteOutlined,
      MoreOutlined } from '@ant-design/icons';
-import { menuSeafood, addToCartLogic, calculateTotal, updateQuantityLogic, handleBookingLogic, HuyDatBanLogic} from '../Untils/handleTable';
+     
+import { menuSeafood, addToCartLogic, calculateTotal, updateQuantityLogic,
+     handleBookingLogic, HuyDatBanLogic} from '../Untils/handleTable';
+
 import Sider from 'antd/es/layout/Sider';
 import { Link } from 'react-router-dom';
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 
 const TablePage = ({table,setTable, setBillHistory}) => {
     
     const [isBillModalOpen, setIsBillModalOpen] = useState(false);
     const [billData, setBillData] = useState(null);
     const [isActionModalOpen, setIsActionModalOpen] = useState(false);
+
+    //lưu loại thức ăc đang chọn
+    const [selectedCategory, setSelectedCategory] = useState('Tất cả');
+    const categories = ['Tất cả', 'Tôm', 'Cua', 'Mực', 'Ốc', 'Lẩu', 'Nước uống'];
 
     const [cart, setCart] = useState([]);
     //open Draw oder
@@ -27,6 +34,9 @@ const TablePage = ({table,setTable, setBillHistory}) => {
     // const [collapsed, setCollapsed] = useState(true); // Trạng thái đóng/mở menu
 
     const [selectedTable, setSelectedTable] = useState(null);
+
+    const [discount, setDiscount] = useState(0); // Phần trăm giảm giá (0-100)
+    const [customerCash, setCustomerCash] = useState(0); // Tiền khách đưa
 
     
 const menuItems = [
@@ -48,7 +58,7 @@ const menuItems = [
             setIsActionModalOpen(false);
             message.success(`Đã xác nhận hủy đặt ${item.name} thành công!`);
         }
-
+    // mở modal thông tin đặt bàn
     const [openBookingTable,setBookingTableOpen]=useState(false);
     const [bookingForm] = Form.useForm();
 
@@ -66,10 +76,33 @@ const menuItems = [
     };
 
     const onConfirmOrder = () => {
-        const updated = table.map(t => t.id === selectedTable.id ? { ...t, status: 'occupied', orderItems: cart } : t);
-        setTable(updated);
-        message.success("Đã cập nhật đơn hàng!");
-        setOpen(false);
+
+        const hasItems = cart.length>0;
+
+        const updated = table.map(t => {
+        if (t.id === selectedTable.id) {
+            // Xác định trạng thái mới:
+            // Nếu giỏ hàng có món -> occupied (Có khách)
+            // Nếu giỏ hàng trống -> giữ nguyên status cũ (available hoặc reserved)
+            const newStatus = hasItems ? 'occupied' : t.status;
+
+            return { 
+                ...t, 
+                status: newStatus, 
+                orderItems: cart 
+            };
+        }
+        return t;});
+
+            setTable(updated);
+
+            if (hasItems) {
+                message.success(`Đã chuyển ${selectedTable.name} sang trạng thái có khách!`);
+            } else {
+                message.info("Đã cập nhật (Bàn chưa có món ăn)");
+            }
+
+            setOpen(false); // Đóng Drawer
     };
     // Hàm xử lý khi bấm nút + hoặc - trong giỏ hàng
 const handleUpdateQty = (foodId, delta) => {
@@ -113,13 +146,15 @@ const ChuyenBan= (tuBan, denBan)=>{
 }
 
 const handleShowBill = () => {
-    // Chuẩn bị dữ liệu hóa đơn từ bàn đang chọn
+    const finalTotal = calculateTotal(cart) * (1 - discount/100);
     const data = {
         tableName: selectedTable.name,
         items: cart,
-        total: calculateTotal(cart),
+        subTotal: calculateTotal(cart),
+        discount: discount,
+        total: finalTotal,
         time: new Date().toLocaleString('vi-VN'),
-        staff: "Phan Xuan Nhan" // Tên bạn hoặc tên nhân viên đăng nhập
+        staff: "Phan Xuân Nhạn"
     };
     setBillData(data);
     setIsBillModalOpen(true);
@@ -267,62 +302,45 @@ const handleConfirmPayment = () => {
                     title="PHIẾU THANH TOÁN"
                     open={isBillModalOpen}
                     onCancel={() => setIsBillModalOpen(false)}
-                    footer={null}
-                    centered
-                    width={400}
+                    footer={[
+                        <Button key="back" onClick={() => setIsBillModalOpen(false)}>Quay lại</Button>,
+                        <Button key="pay" type="primary" onClick={handleConfirmPayment} disabled={customerCash < billData?.total}>
+                            Xác nhận thanh toán
+                        </Button>
+                    ]}
                 >
                     {billData && (
-                        <div style={{ padding: '10px', fontFamily: 'monospace' }}>
-                            <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-                                <h2 style={{ margin: 0 }}>HẢI SẢN HUẾ</h2>
-                                <p>Địa chỉ: AEON Mall Huế</p>
-                                <p>---------------------------</p>
-                                <h3>HÓA ĐƠN THANH TOÁN</h3>
+                        <div>
+                            {/* Nội dung hóa đơn cũ của bạn */}
+                            <div style={{ borderTop: '1px dashed #000', marginTop: '10px', paddingTop: '10px' }}>
+                                <p>Tạm tính: {billData.subTotal.toLocaleString()}đ</p>
+                                <p>Giảm giá: {billData.discount}% (-{ (billData.subTotal * billData.discount / 100).toLocaleString() }đ)</p>
+                                <Title level={3} textAlign="right">TỔNG CỘNG: {billData.total.toLocaleString()}đ</Title>
                             </div>
-                            
-                            <p><b>Bàn:</b> {billData.tableName}</p>
-                            <p><b>Ngày:</b> {billData.time}</p>
-                            <p><b>Nhân viên:</b> {billData.staff}</p>
-                            
-                            <table style={{ width: '100%', borderTop: '1px dashed #000', paddingTop: '10px' }}>
-                                <thead>
-                                    <tr style={{ textAlign: 'left' }}>
-                                        <th>Món</th>
-                                        <th>SL</th>
-                                        <th style={{ textAlign: 'right' }}>T.Tiền</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {billData.items.map(item => (
-                                        <tr key={item.id}>
-                                            <td>{item.name}</td>
-                                            <td>{item.qty}</td>
-                                            <td style={{ textAlign: 'right' }}>{(item.price * item.qty).toLocaleString()}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                            
-                            <div style={{ borderTop: '1px dashed #000', marginTop: '10px', paddingTop: '10px', textAlign: 'right' }}>
-                                <p style={{ fontSize: '18px' }}>
-                                    <b>TỔNG CỘNG: {billData.total.toLocaleString()}đ</b>
-                                </p>
-                            </div>
-                            
-                            <div style={{ textAlign: 'center', marginTop: '20px', fontStyle: 'italic' }}>
-                                <p>Cảm ơn quý khách. Hẹn gặp lại!</p>
+
+                            {/* PHẦN TÍNH TIỀN THỐI */}
+                            <div style={{ marginTop: '20px', padding: '15px', background: '#e6f7ff', borderRadius: '8px' }}>
+                                <div style={{ marginBottom: '10px' }}>
+                                    <Text strong>Tiền khách đưa:</Text>
+                                    <InputNumber
+                                        style={{ width: '100%' }}
+                                        size="large"
+                                        formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                                        parser={value => value.replace(/\$\s?|(,*)/g, '')}
+                                        onChange={(val) => setCustomerCash(val || 0)}
+                                    />
+                                </div>
+                                <div>
+                                    <Text strong>Tiền thối lại:</Text>
+                                    <Title level={4} style={{ color: '#52c41a', margin: 0 }}>
+                                        {customerCash - billData.total > 0 
+                                            ? (customerCash - billData.total).toLocaleString() 
+                                            : 0}đ
+                                    </Title>
+                                </div>
                             </div>
                         </div>
                     )}
-                    <div style={{display: 'flex', justifyContent: 'space-between'}}>
-                            <Button key="back" onClick={() => setIsBillModalOpen(false)}>Quay lại</Button>
-                            <Button key="pay" type="primary" onClick={handleConfirmPayment}>
-                                Thanh toán
-                            </Button>
-                            <Button key="print" type="primary" onClick={handlePrintBill}>
-                                In hóa đơn tạm tính
-                            </Button>
-                    </div>
                 </Modal>
                 <Modal 
                     title={`Thông tin đặt bàn - ${selectedTable?.name}`}
@@ -385,19 +403,6 @@ const handleConfirmPayment = () => {
                     size='Large'
                 />
 
-                    <Dropdown
-                        menu={{ items: menuItems }}
-                        trigger={['click']}
-                        >
-                        <MoreOutlined
-                            style={{
-                            transform: 'rotate(90deg)', // 👉 thành 3 chấm dọc
-                            fontSize: 18,
-                            cursor: 'pointer'
-                            }}
-                        />
-                    </Dropdown>
-
                     <Drawer 
                         width="80%" 
                         title={` Chuyển bàn ${selectedTable?.name} đến bàn khác`} 
@@ -452,11 +457,26 @@ const handleConfirmPayment = () => {
                         style={{ fontSize: '18px', width: 64, height: 64 }} */}
                     {/* /> */}
                 <Row gutter={24}>
-                    <Col span={14}>
+                    <Col span={4}>
+                        <Title level={5}>Danh mục</Title>
+                        <Menu
+                            mode="vertical"
+                            selectedKeys={[selectedCategory]}
+                            onClick={(e) => setSelectedCategory(e.key)}
+                            style={{ borderRadius: '8px', border: '1px solid #f0f0f0' }}
+                            items={categories.map(cat => ({ key: cat, label: cat }))}
+                        />
+                    </Col>
+                    <Col span={12}>
                         <Row gutter={[16, 16]}>
-                            {menuSeafood.map(food => (
+                            {menuSeafood.filter(food => selectedCategory === 'Tất cả' || food.category === selectedCategory)
+                            .map(food => (
                                 <Col span={12} key={food.id}>
-                                    <Card size="small">
+                                    <Card size="small"
+                                        hoverable
+                                        cover={<div style={{height: '100px', background: '#e6f7ff', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>🖼️</div>}
+                                    
+                                    >
                                         <b>{food.name}</b> - {food.price.toLocaleString()}đ
                                         <Button type="primary" icon={<PlusOutlined />} onClick={() => setCart(addToCartLogic(cart, food))} />
                                     </Card>
@@ -464,7 +484,21 @@ const handleConfirmPayment = () => {
                             ))}
                         </Row>
                     </Col>
-                    <Col span={10}>
+                    <Col span={8}>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                            <Dropdown
+                                menu={{ items: menuItems }}
+                                trigger={['click']}
+                                >
+                                <MoreOutlined
+                                    style={{
+                                    transform: 'rotate(90deg)', // 👉 thành 3 chấm dọc
+                                    fontSize: 18,
+                                    cursor: 'pointer'
+                                    }}
+                                />
+                            </Dropdown>
+                        </div>
                         <Title level={4}>Giỏ hàng</Title>
                         <List
                                 dataSource={cart}
@@ -489,6 +523,27 @@ const handleConfirmPayment = () => {
                                 )}
                             />
                         <Title level={4}>Tổng: {calculateTotal(cart).toLocaleString()}đ</Title>
+                            <div style={{ marginTop: '20px', padding: '15px', background: '#f5f5f5', borderRadius: '8px' }}>
+                                <Row gutter={16} align="middle">
+                                    <Col span={12}>
+                                        <Text strong>Khuyến mãi (%):</Text>
+                                        <InputNumber 
+                                            min={0} max={100} 
+                                            value={discount} 
+                                            onChange={(val) => setDiscount(val || 0)} 
+                                            style={{ width: '100%' }}
+                                        />
+                                    </Col>
+                                    <Col span={12} style={{ textAlign: 'right' }}>
+                                        <Text delete style={{ display: discount > 0 ? 'block' : 'none' }}>
+                                            Gốc: {calculateTotal(cart).toLocaleString()}đ
+                                        </Text>
+                                        <Title level={4} style={{ margin: 0, color: '#ff4d4f' }}>
+                                            Tổng: {(calculateTotal(cart) * (1 - discount/100)).toLocaleString()}đ
+                                        </Title>
+                                    </Col>
+                                </Row>
+                            </div>
                             <Button 
                                 type="primary" 
                                 danger 

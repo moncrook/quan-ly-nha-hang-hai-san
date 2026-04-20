@@ -3,7 +3,8 @@ export const menuSeafood = [
     { id: 101, name: 'Tôm Hùm Bỏ Lò', price: 750000, category: 'Tôm' },
     { id: 102, name: 'Cua Hoàng Đế Hấp', price: 900000, category: 'Cua' },
     { id: 103, name: 'Mực Nhảy Nướng', price: 180000, category: 'Mực' },
-    { id: 104, name: 'Lẩu Hải Sản Thập Cẩm', price: 550000, category: 'Lẩu' },
+    { id: 104, name: 'Lẩu Hải Sản', price: 550000, category: 'Lẩu' },
+    { id: 105, name: 'Ốc Hương Quế', price: 120000, category: 'Ốc' },
 ];
 
 // Hàm xử lý thêm món vào giỏ

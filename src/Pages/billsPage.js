@@ -1,11 +1,24 @@
 import React from 'react';
-import { Table, Card, Row, Col, Statistic, Typography, Tag } from 'antd';
-import { DollarCircleOutlined, FileTextOutlined } from '@ant-design/icons';
+import { Table, Card, Row, Col, Statistic, Typography, Tag, Dropdown } from 'antd';
+import { DollarCircleOutlined, FileTextOutlined, MoreOutlined } from '@ant-design/icons';
 
 const { Title } = Typography;
 
 const BillsPage = ({billHistory})=>{
     const totalRevenue = billHistory.reduce((sum, bill) => sum + bill.total, 0);
+
+    const menuBills=[
+        {
+    key: '1',
+    label: 'báo cáo doanh thu theo ngày',
+    // onClick: () => handleEdit(item),
+    },
+    {
+            key: '2',
+            label: 'báo cáo doanh thu theo tháng',
+            // onClick: () => setChuyenBanOpen(true),
+    },
+    ]
 
     const columns = [
         { title: 'Mã HĐ', dataIndex: 'id', key: 'id', render: (id) => `#${id.toString().slice(-6)}` },
@@ -22,6 +35,20 @@ const BillsPage = ({billHistory})=>{
 
     return (
         <div style={{ padding: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                            <Dropdown
+                                menu={{ items: menuBills }}
+                                trigger={['click']}
+                                >
+                                <MoreOutlined
+                                    style={{
+                                    transform: 'rotate(90deg)', // 👉 thành 3 chấm dọc
+                                    fontSize: 18,
+                                    cursor: 'pointer'
+                                    }}
+                                />
+                            </Dropdown>
+                        </div>
             <Title level={2}>🧾 QUẢN LÝ HÓA ĐƠN</Title>
 
             <Row gutter={16} style={{ marginBottom: '20px' }}>

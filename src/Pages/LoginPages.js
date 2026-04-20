@@ -13,6 +13,7 @@ const LoginPage = ({ setIsLoggedIn }) => {
         const result = loginLogic(values.username, values.password);
         
         if (result.success) {
+            localStorage.setItem('isLoggedIn', true);
             message.success(result.message);
             setIsLoggedIn(true); // Cấp quyền truy cập
             navigate('/table');  // Chuyển vào trang sơ đồ bàn
