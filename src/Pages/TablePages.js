@@ -399,6 +399,7 @@ const handleConfirmPayment = () => {
                             icon={<MoneyCollectOutlined />} 
                             onClick={() => {
                                 setMethodModalOpen(false);
+                                setCustomerCash(billData?.total || 0); // Tự động điền tổng tiền vào ô nhập
                                 setTienMatModalOpen(true);
                             }}
                         >
@@ -423,27 +424,46 @@ const handleConfirmPayment = () => {
                 <Modal
                     title="THANH TOÁN TIỀN MẶT"
                     open={tienMatModalOpen}
-                    onCancel={() => setTienMatModalOpen(false)}
+                    onCancel={() => {setTienMatModalOpen(false);
+                        setCustomerCash(0); // Reset lại tiền
+                    }}
                     onOk={handleThanhToan}
                     okText="Xác nhận thanh toán"
                     cancelText="Quay lại"
                     // Chỉ cho xác nhận khi khách đưa đủ tiền
-                    okButtonProps={{ disabled: customerCash < (billData?.total || 0) }}
+                    // okButtonProps={{ disabled: customerCash < (billData?.total || 0) }}
                 >
                     <div style={{ padding: '10px 0' }}>
-                        <p>Tổng tiền cần thanh toán: <b>{billData?.total?.toLocaleString()}đ</b></p>
+                        {/* <p>Tổng tiền cần thanh toán: <b>{billData?.total?.toLocaleString()}đ</b></p> */}
+
+                        
+                        <p>Tạm tính: {billData?.subTotal?.toLocaleString()}đ</p>
+                        <p>Giảm giá: {billData?.discount || 0}% (-{ (billData?.subTotal * billData?.discount / 100).toLocaleString() }đ)</p>
+                        <Title >TỔNG CỘNG: {billData?.total?.toLocaleString()}đ</Title>
                         
                         <div style={{ marginBottom: '15px' }}>
                             <label>Tiền khách đưa:</label>
-                            <InputNumber
-                                style={{ width: '100%' }}
-                                formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                                parser={(value) => value.replace(/\$\s?|(,*)/g, '')}
-                                onChange={(value) => setCustomerCash(value || 0)}
-                                value={customerCash}
-                                autoFocus
-                                placeholder="Nhập số tiền khách đưa..."
-                            />
+                            <div style={{ display: 'flex', gap: '8px', marginTop: '5px' }}>
+                                <InputNumber
+                                    style={{ flex: 1 }} // Để ô nhập chiếm hết không gian còn lại
+                                    size="large"
+                                    formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                                    parser={(value) => value.replace(/\$\s?|(,*)/g, '')}
+                                    onChange={(value) => setCustomerCash(value || 0)}
+                                    value={customerCash}
+                                    autoFocus
+                                    placeholder="Nhập số tiền..."
+                                />
+                                <Button 
+                                    size="large" 
+                                    danger 
+                                    icon={<DeleteOutlined />} 
+                                    onClick={() => setCustomerCash(0)} // Khi bấm sẽ xóa về 0
+                                    title="Xóa nhập lại"
+                                >
+                                    Xóa
+                                </Button>
+                            </div> 
                         </div>
 
                         {customerCash > 0 && (
