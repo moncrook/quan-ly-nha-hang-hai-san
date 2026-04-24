@@ -15,7 +15,7 @@ import { Link } from 'react-router-dom';
 
 const { Title, Text } = Typography;
 
-const TablePage = ({table,setTable, setBillHistory}) => {
+const TablePage = ({ table, setTable, menuSeafood, user, setBillHistory }) => {
     
     const [isBillModalOpen, setIsBillModalOpen] = useState(false);
     const [billData, setBillData] = useState(null);
@@ -336,16 +336,17 @@ const handleConfirmPayment = () => {
                     onCancel={() => setIsBillModalOpen(false)}
                     footer={[
                         <Button key="back" onClick={() => setIsBillModalOpen(false)}>Quay lại</Button>,
-                        <Button 
-                            key="pay" 
-                            type="primary" 
-                            danger
-                            onClick={() => setMethodModalOpen(true)} 
-                            // Chỉ cho bấm Thanh toán khi khách đưa đủ tiền
-                            // disabled={!customerCash || customerCash < (billData?.total || 0)}
-                        >
-                            Thanh Toán
-                        </Button>,
+                        // CHỈ HIỆN NÚT THANH TOÁN NẾU LÀ THU NGÂN HOẶC QUẢN LÝ
+                        (user.role === 'CASHIER' || user.role === 'ADMIN') && (
+                            <Button 
+                                key="pay" 
+                                type="primary" 
+                                danger
+                                onClick={() => setMethodModalOpen(true)} 
+                            >
+                                Thanh Toán
+                            </Button>
+                        ),
                         <Button
                             onClick={handlePrintBill}
                         >

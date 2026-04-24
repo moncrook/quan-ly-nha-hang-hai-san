@@ -7,8 +7,7 @@ import { menuSeafood, handleAddProduct, handleEditProduct, handleDeleteProduct }
 
 const { Title } = Typography;
 
-const ProductPage = () => {
-    const [products, setProducts] = useState(menuSeafood);
+const ProductPage = ({ products, setProducts }) => {
     console.log("Dữ liệu món ăn hiện tại:", products);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingProduct, setEditingProduct] = useState(null);

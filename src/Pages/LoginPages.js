@@ -6,7 +6,7 @@ import { loginLogic} from '../Untils/AuthLogic';
 
 const { Title } = Typography;
 
-const LoginPage = ({ setIsLoggedIn }) => {
+const LoginPage = ({ setIsLoggedIn, employees, setUser }) => {
     const navigate = useNavigate();
 
     const onFinish = (values) => {
@@ -22,6 +22,26 @@ const LoginPage = ({ setIsLoggedIn }) => {
         }
     };
 
+    // Tìm tài khoản khớp trong danh sách employees nhận từ App.js
+
+    const handleLogin = (values) => {
+        const { username, password } = values;
+        
+        // Tìm nhân viên trong danh sách có username và password khớp
+        const foundUser = employees.find(e => e.username === username && e.password === password);
+
+        if (foundUser) {
+            setUser(foundUser); // Lưu thông tin người này vào App.js
+            setIsLoggedIn(true);
+            localStorage.setItem('isLoggedIn', 'true');
+            localStorage.setItem('userRole', foundUser.role);
+            navigate('/table');
+            message.success(`Chào mừng ${foundUser.name} quay lại!`);
+        } else {
+            message.error("Tài khoản hoặc mật khẩu không chính xác!");
+        }
+    };
+
     return (
         <div style={{ 
             display: 'flex', justifyContent: 'center', alignItems: 'center', 
@@ -29,7 +49,7 @@ const LoginPage = ({ setIsLoggedIn }) => {
         }}>
             <Card style={{ width: 400, borderRadius: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
                 <Title level={3} style={{ textAlign: 'center', color: '#1890ff' }}>HỆ THỐNG QUẢN LÝ</Title>
-                <Form onFinish={onFinish} layout="vertical" size="large">
+                <Form onFinish={handleLogin} layout="vertical" size="large">
                     <Form.Item name="username" rules={[{ required: true, message: 'Nhập tài khoản!' }]}>
                         <Input prefix={<UserOutlined />} placeholder="Tài khoản" />
                     </Form.Item>
