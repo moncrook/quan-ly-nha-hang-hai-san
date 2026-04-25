@@ -6,7 +6,7 @@ import { loginLogic} from '../Untils/AuthLogic';
 
 const { Title } = Typography;
 
-const LoginPage = ({ setIsLoggedIn, employees, setUser }) => {
+const LoginPage = ({ setIsLoggedIn, employees, setUser, currentShift }) => {
     const navigate = useNavigate();
 
     const onFinish = (values) => {
@@ -25,20 +25,32 @@ const LoginPage = ({ setIsLoggedIn, employees, setUser }) => {
     // Tìm tài khoản khớp trong danh sách employees nhận từ App.js
 
     const handleLogin = (values) => {
-        const { username, password } = values;
-        
-        // Tìm nhân viên trong danh sách có username và password khớp
-        const foundUser = employees.find(e => e.username === username && e.password === password);
+        const foundUser = employees.find(
+            (emp) => emp.username === values.username && emp.password === values.password
+        );
 
         if (foundUser) {
-            setUser(foundUser); // Lưu thông tin người này vào App.js
-            setIsLoggedIn(true);
-            localStorage.setItem('isLoggedIn', 'true');
-            localStorage.setItem('userRole', foundUser.role);
-            navigate('/table');
-            message.success(`Chào mừng ${foundUser.name} quay lại!`);
+            // 1. Nếu là Quản lý: Cho phép vào luôn để mở ca
+            if (foundUser.role === 'ADMIN') {
+                setUser(foundUser);
+                setIsLoggedIn(true);
+                message.success("Chào Quản lý!");
+                navigate('/table');
+            } 
+            // 2. Nếu là Nhân viên (STAFF/CASHIER): Kiểm tra ca làm việc
+            else {
+                if (!currentShift) {
+                    // Nếu currentShift đang là null
+                    message.error("Hiện tại chưa có ca làm việc nào được mở. Vui lòng đợi Quản lý mở ca!");
+                } else {
+                    setUser(foundUser);
+                    setIsLoggedIn(true);
+                    message.success(`Nhân viên ${foundUser.name} đã vào ca!`);
+                    navigate('/table');
+                }
+            }
         } else {
-            message.error("Tài khoản hoặc mật khẩu không chính xác!");
+            message.error("Tài khoản hoặc mật khẩu sai!");
         }
     };
 

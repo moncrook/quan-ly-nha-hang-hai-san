@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Result } from 'antd';
+import { Result, message   } from 'antd';
 import { BrowserRouter, Routes, Route, Navigate} from 'react-router-dom';
 import MainLayout from './component/MainLayout'; // Import cái khung vừa tạo
 import LoginPage from './Pages/LoginPages';
@@ -43,6 +43,12 @@ const App = () => {
             // ... (copy nốt các bàn khác của bạn vào đây)
         ]);
 
+        // App.js
+    const [currentShift, setCurrentShift] = useState(null); // null = chưa mở ca
+
+    // Thêm một mảng để lưu lịch sử các ca đã đóng (phục vụ báo cáo)
+    const [shiftHistory, setShiftHistory] = useState([]);
+
         const [billHistory, setBillHistory] = useState([]);
         const [isLoggedIn, setIsLoggedIn] = useState(false);
         const [menuData, setMenuData] = useState(menuSeafood);
@@ -51,8 +57,6 @@ const App = () => {
 
         // lưu thông tin người đăng nhập
         const [user, setUser] = useState(null);
-
-        const [currentShift, setCurrentShift] = useState(null); // null nghĩa là chưa mở ca
         
 
         // ẩn hiện menu điều hướng
@@ -100,20 +104,40 @@ const App = () => {
             },
             ];
 
-        // const filteredMenuItems = user?.role 
-        // ? allMenuItems.filter(item => item.roles.includes(user?.role)) 
-        // : [];
+        // App.js
 
-    // Kiểm tra trạng thái đã lưu trong máy người dùng chưa
-    // const [isLoggedIn, setIsLoggedIn] = useState(() => {
-    //     return localStorage.getItem('isLoggedIn') === "true";
-    // });
+        // Mở ca
+        const openShift = (openingCash) => {
+            setCurrentShift({
+                startTime: new Date().toLocaleString('vi-VN'),
+                openingBalance: openingCash,
+                cashRevenue: 0, // Tiền mặt thu được từ các hóa đơn
+                status: 'OPEN'
+            });
+        };
+
+        // Đóng ca
+        const closeShift = (actualCash) => {
+            const finalShiftData = {
+                ...currentShift,
+                endTime: new Date().toLocaleString('vi-VN'),
+                actualCash: actualCash,
+                expectedCash: currentShift.openingBalance + currentShift.cashRevenue,
+            };
+            
+            setShiftHistory([...shiftHistory, finalShiftData]);
+            setCurrentShift(null); // Reset ca về null
+            setIsLoggedIn(false);  // Đuổi tất cả ra trang Login
+            setUser(null);
+            message.warning("Đã đóng ca. Hệ thống tạm dừng phục vụ nhân viên!");
+        };
 
     return (
         <BrowserRouter>
             <Routes>
-                <Route path="/" element={<LoginPage setIsLoggedIn={setIsLoggedIn} setUser={setUser} employees={employees} />} />
-                <Route path="/login" element={<LoginPage setIsLoggedIn={setIsLoggedIn} setUser={setUser} employees={employees} />} />
+                <Route path="/" element={<LoginPage setIsLoggedIn={setIsLoggedIn} setUser={setUser} employees={employees}/>} />
+                <Route path="/login" element={<LoginPage 
+                    setIsLoggedIn={setIsLoggedIn} setUser={setUser} employees={employees} />} />
                 
                 {/* Các trang khác giữ nguyên logic kiểm tra isLoggedIn */}
                  {/* Tìm đến đoạn render trong App.js và sửa các Route như sau: */}
@@ -121,7 +145,10 @@ const App = () => {
                     path="/table" 
                     element={
                         isLoggedIn ? (
-                            <MainLayout setIsLoggedIn={setIsLoggedIn} user={user}> {/* TRUYỀN THÊM USER VÀO ĐÂY */}
+                            <MainLayout setIsLoggedIn={setIsLoggedIn} user={user}
+                                 currentShift={currentShift} openShift={openShift} // Phải có cái này
+                                 closeShift={closeShift}
+                            > {/* TRUYỀN THÊM USER VÀO ĐÂY */}
                                 <TablePage 
                                     table={table} 
                                     setTable={setTable} 
@@ -135,20 +162,26 @@ const App = () => {
                 />
 
                 <Route path="/booking" element={
-                    <MainLayout user={user} setIsLoggedIn={setIsLoggedIn}> {/* TRUYỀN THÊM USER VÀO ĐÂY */}
+                    <MainLayout user={user} setIsLoggedIn={setIsLoggedIn} currentShift={currentShift} openShift={openShift} // Phải có cái này
+                    closeShift={closeShift} // Phải có cái này
+                > {/* TRUYỀN THÊM USER VÀO ĐÂY */}
                         <BookingPage tableData={table} setTableData={setTable} />
                     </MainLayout>
                 } />
 
                 <Route path="/bills" element={
-                    <MainLayout user={user} setIsLoggedIn={setIsLoggedIn}> {/* TRUYỀN THÊM USER VÀO ĐÂY */}
+                    <MainLayout user={user} setIsLoggedIn={setIsLoggedIn} currentShift={currentShift} openShift={openShift} // Phải có cái này
+                        closeShift={closeShift} // Phải có cái này
+                    > {/* TRUYỀN THÊM USER VÀO ĐÂY */}
                         <BillsPage billHistory={billHistory}/>
                     </MainLayout>
                 } />
 
                 <Route path="/employees" element={
                     user?.role === 'ADMIN' 
-                    ? <MainLayout user={user} setIsLoggedIn={setIsLoggedIn}>
+                    ? <MainLayout user={user} setIsLoggedIn={setIsLoggedIn} currentShift={currentShift}openShift={openShift} // Phải có cái này
+                        closeShift={closeShift} // Phải có cái này
+                    >
                         <EmployeePage employees={employees} setEmployees={setEmployees} />
                     </MainLayout>
                     : <Result status="403" title="Bạn không có quyền vào trang này" />
@@ -156,7 +189,10 @@ const App = () => {
 
                 <Route path="/products" element={
                     user?.role === 'ADMIN' 
-                    ? <MainLayout user={user} setIsLoggedIn={setIsLoggedIn}>
+                    ? <MainLayout user={user} setIsLoggedIn={setIsLoggedIn} currentShift={currentShift} 
+                            openShift={openShift} // Phải có cái này
+                            closeShift={closeShift} // Phải có cái này
+                        >
                         <ProductPage 
                             products={menuData} 
                             setProducts={setMenuData} /></MainLayout> // Quản lý mới vào được và có Menu

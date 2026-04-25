@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Layout, Menu, Button } from 'antd';
+import { Layout, Menu, Button, Tag, Modal, InputNumber } from 'antd';
 import { 
     MenuUnfoldOutlined, 
     MenuFoldOutlined, 
@@ -15,9 +15,23 @@ import { Link, useNavigate } from 'react-router-dom';
 
 const { Header, Sider, Content } = Layout;
 
-const MainLayout = ({ children, user, setIsLoggedIn }) => {
+const MainLayout = ({ children, user, setIsLoggedIn, currentShift, openShift, closeShift }) => {
     const [collapsed, setCollapsed] = useState(true); // Trạng thái đóng/mở menu
     const navigate = useNavigate();
+
+    // THÊM 2 DÒNG NÀY ĐỂ QUẢN LÝ MODAL
+    const [isShiftModalOpen, setIsShiftModalOpen] = useState(false);
+    const [tempCash, setTempCash] = useState(0);
+// Hàm xử lý khi nhấn nút "Xác nhận" trên Modal
+    const handleConfirmShift = () => {
+        if (!currentShift) {
+            openShift(tempCash); // Gọi hàm mở ca từ App.js
+        } else {
+            closeShift(tempCash); // Gọi hàm đóng ca từ App.js
+        }
+        setIsShiftModalOpen(false);
+        setTempCash(0);
+    }
 
      // 1. Định nghĩa tất cả các menu có thể có kèm theo danh sách quyền (roles)
     const allMenuItems = [
@@ -94,6 +108,28 @@ const MainLayout = ({ children, user, setIsLoggedIn }) => {
                         style={{ fontSize: '18px', width: 64, height: 64 }}
                     />
                     <span style={{ fontWeight: 'bold', fontSize: '18px' }}>Hệ thống Quản lý Nhà hàng</span>
+                    {/* // Trong MainLayout.js */}
+                    <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '15px' }}>
+                        {/* Hiển thị trạng thái ca hiện tại */}
+                        {currentShift ? (
+                            <Tag color="green">Ca đang mở từ: {currentShift.startTime}</Tag>
+                        ) : (
+                            <Tag color="red">Hệ thống đang đóng ca</Tag>
+                        )}
+
+                        {/* Chỉ ADMIN mới thấy nút điều khiển ca */}
+                        {user?.role === 'ADMIN' && (
+                            currentShift ? (
+                                <Button type="primary" danger onClick={() => setIsShiftModalOpen(true)}>
+                                    ĐÓNG CA LÀM VIỆC
+                                </Button>
+                            ) : (
+                                <Button type="primary" onClick={() => setIsShiftModalOpen(true)}>
+                                    MỞ CA LÀM VIỆC
+                                </Button>
+                            )
+                        )}
+                    </div>
                 </Header>
 
                 {/* NỘI DUNG CÁC TRANG SẼ HIỆN Ở ĐÂY */}
@@ -101,6 +137,23 @@ const MainLayout = ({ children, user, setIsLoggedIn }) => {
                     {children}
                 </Content>
             </Layout>
+            {/* Đặt đoạn này ngay trước thẻ đóng </Layout> cuối cùng */}
+            <Modal
+                title={currentShift ? "XÁC NHẬN ĐÓNG CA" : "MỞ CA LÀM VIỆC MỚI"}
+                open={isShiftModalOpen}
+                onOk={handleConfirmShift}
+                onCancel={() => setIsShiftModalOpen(false)}
+                okText="Xác nhận"
+                cancelText="Hủy"
+            >
+                <p>{currentShift ? "Nhập số tiền mặt thực tế trong két:" : "Nhập số tiền mặt đầu ca (tiền lẻ):"}</p>
+                <InputNumber
+                    style={{ width: '100%' }}
+                    min={0}
+                    formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                    onChange={(val) => setTempCash(val || 0)}
+                />
+            </Modal>
         </Layout>
     );
 };

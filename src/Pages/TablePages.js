@@ -328,17 +328,20 @@ const showModal = (product = null) => {
         <div>
             <div style={{display: 'flex', justifyContent: 'space-between'}}>
                 <Title level={2} style={{ color: '#1890ff' }}>🍽️ SƠ ĐỒ BÀN ĂN</Title>
-                <div>
-                    <Button icon={<PlusOutlined />} onClick={()=>showModal()}>
-                        thêm
-                    </Button>
-                    <Button icon={<EditOutlined />} onClick={() => setIsEditListModalOpen(true)} >
-                        sửa
-                    </Button>
-                    <Button icon={<DeleteOutlined />} onClick={() => setIsDeleteListModalOpen(true)}>
-                        xóa
-                    </Button>
-                </div>
+                {/* Kiểm tra role: Chỉ render cụm nút này nếu user là ADMIN hoặc MANAGER */}
+                {(user?.role === 'ADMIN') && (
+                    <div>
+                        <Button icon={<PlusOutlined />} onClick={() => showModal()}>
+                            thêm
+                        </Button>
+                        <Button icon={<EditOutlined />} onClick={() => setIsEditListModalOpen(true)} style={{ margin: '0 10px' }}>
+                            sửa
+                        </Button>
+                        <Button danger icon={<DeleteOutlined />} onClick={() => setIsDeleteListModalOpen(true)}>
+                            xóa
+                        </Button>
+                    </div>
+                )}
                 {/* modal thêm bàn mới */}
                  <Modal
                     title="Thêm bàn mới"
@@ -349,7 +352,9 @@ const showModal = (product = null) => {
                     cancelText="Đóng"
                     centered
                 >
-                    <Form form={form} layout="vertical" onFinish={handleSave}>
+                    <Form form={form} layout="vertical" onFinish={handleSave}
+                        initialValues={{ name: `bàn số ${table.length+1}` }}
+                    >
                         <Form.Item 
                             name="name" 
                             label="Tên bàn" 
