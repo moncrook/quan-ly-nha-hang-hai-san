@@ -2,13 +2,13 @@ import React, { useState } from 'react';
 
 import { Row, InputNumber, 
      Col,Card,Tag,Button, Drawer, Input, List, Avatar, message, 
-     Popconfirm, Typography, Modal, Menu,Dropdown, Form  } from 'antd';
+     Popconfirm, Typography, Modal, Menu,Dropdown, Form, Select  } from 'antd';
 
 import { PlusOutlined, MinusOutlined, DeleteOutlined, MoneyCollectOutlined, QrcodeOutlined,
-     MoreOutlined } from '@ant-design/icons';
+     MoreOutlined, EditOutlined } from '@ant-design/icons';
      
 import { menuSeafood, addToCartLogic, calculateTotal, updateQuantityLogic,
-     handleBookingLogic, HuyDatBanLogic} from '../Untils/handleTable';
+     handleBookingLogic, HuyDatBanLogic, handleAddTable, handleEditTable} from '../Untils/handleTable';
 
 import Sider from 'antd/es/layout/Sider';
 import { Link } from 'react-router-dom';
@@ -21,9 +21,20 @@ const TablePage = ({ table, setTable, menuSeafood, user, setBillHistory }) => {
     const [billData, setBillData] = useState(null);
     const [isActionModalOpen, setIsActionModalOpen] = useState(false);
 
+
+    //mở modal bàn để ctheem bàn mới
+    const [isModalTableOpen,setIsModalTableOpen]=useState(false);
+
+    const [form] = Form.useForm();
+
     //lưu loại thức ăc đang chọn
     const [selectedCategory, setSelectedCategory] = useState('Tất cả');
     const categories = ['Tất cả', 'Tôm', 'Cua', 'Mực', 'Ốc', 'Lẩu', 'Nước uống'];
+
+
+    //chỉ định loái sức chứa bàn
+    const [selectedCapacity,setSelectedCapacity]=useState(2);
+    const capacities=[2,4,6,8,10];
 
     const [cart, setCart] = useState([]);
     //open Draw oder
@@ -261,9 +272,170 @@ const handleConfirmPayment = () => {
     
 };
 
+const showModal = (product = null) => {
+        setEditingTable(product);
+        if (product) {
+            form.setFieldsValue(product); // Đổ dữ liệu cũ vào form nếu là Sửa
+        } else {
+            form.resetFields(); // Xóa trắng form nếu là Thêm mới
+        }
+        setIsModalTableOpen(true);
+    };
+
+        // Thêm state mở Modal danh sách chọn bàn
+    const [isEditListModalOpen, setIsEditListModalOpen] = useState(false);
+
+    // Đổi tên state lưu bàn đang sửa (thay cho editingProduct)
+    const [editingTable, setEditingTable] = useState(null);
+
+    // State mở Modal danh sách bàn để xóa
+    const [isDeleteListModalOpen, setIsDeleteListModalOpen] = useState(false);
+
+    const handleDeleteTable = (tableId) => {
+        // Lọc ra các bàn CÓ id KHÁC với id của bàn bị xóa
+        const updatedTable = table.filter(t => t.id !== tableId);
+        setTable(updatedTable);
+        message.success("Đã xóa bàn thành công!");
+        
+        // Nếu xóa hết bàn thì tự động đóng Modal
+        if (updatedTable.length === 0) {
+            setIsDeleteListModalOpen(false);
+        }
+    };  
+
+    // Hàm mở form khi muốn SỬA bàn
+    const openEditForm = (tableItem) => {
+        setEditingTable(tableItem); // Lưu lại bàn đang muốn sửa
+        form.setFieldsValue(tableItem); // Đổ dữ liệu của bàn đó vào Form
+        setIsEditListModalOpen(false); // Đóng Modal danh sách
+        setIsModalTableOpen(true); // Mở Modal Form lên
+    };
+
+
+    const handleSave = (values) => {
+        if (editingTable) {
+                setTable(handleEditTable(table, { ...editingTable, ...values }));
+                message.success("Đã cập nhật bàn ăn");
+        } else {
+            setTable(handleAddTable(table, values));
+            message.success(" đã thêm bàn mới thành công");
+        }
+        setIsModalTableOpen(false);
+        setEditingTable(null); // Reset state
+    };
+
     return (
         <div>
-            <Title level={2} style={{ color: '#1890ff' }}>🍽️ SƠ ĐỒ BÀN ĂN</Title>
+            <div style={{display: 'flex', justifyContent: 'space-between'}}>
+                <Title level={2} style={{ color: '#1890ff' }}>🍽️ SƠ ĐỒ BÀN ĂN</Title>
+                <div>
+                    <Button icon={<PlusOutlined />} onClick={()=>showModal()}>
+                        thêm
+                    </Button>
+                    <Button icon={<EditOutlined />} onClick={() => setIsEditListModalOpen(true)} >
+                        sửa
+                    </Button>
+                    <Button icon={<DeleteOutlined />} onClick={() => setIsDeleteListModalOpen(true)}>
+                        xóa
+                    </Button>
+                </div>
+                {/* modal thêm bàn mới */}
+                 <Modal
+                    title="Thêm bàn mới"
+                    open={isModalTableOpen}
+                    onOk={() => form.submit()} // Kích hoạt handleSave
+                    onCancel={() => setIsModalTableOpen(false)}
+                    okText={"Thêm ngay"}
+                    cancelText="Đóng"
+                    centered
+                >
+                    <Form form={form} layout="vertical" onFinish={handleSave}>
+                        <Form.Item 
+                            name="name" 
+                            label="Tên bàn" 
+                            rules={[{ required: true, message: 'Không được để trống tên món!' }]}
+                        >
+                            <Input placeholder="Ví dụ: bàn 1, bàn ngoài sân" />
+                        </Form.Item>
+
+                        <Form.Item 
+                            name="capacity" 
+                            label="sức chứa" 
+                            rules={[{ required: true, message: 'Vui lòng chọn sức chứa!' }]}
+                        >
+                            <Select placeholder="Chọn một loại">
+                                {capacities.map(cat => (
+                                    <Select.Option key={cat} value={cat}>{cat} người</Select.Option>
+                                ))}
+                            </Select>
+                        </Form.Item>
+                    </Form>
+                </Modal>
+                <Modal
+                    title="Chọn bàn cần sửa thông tin"
+                    open={isEditListModalOpen}
+                    onCancel={() => setIsEditListModalOpen(false)}
+                    footer={null} // Không dùng nút OK/Cancel mặc định
+                    centered
+                >
+                    <List
+                        dataSource={table}
+                        renderItem={(item) => (
+                            <List.Item
+                                actions={[
+                                    <Button 
+                                        type="primary" 
+                                        onClick={() => openEditForm(item)}
+                                    >
+                                        Chọn để sửa
+                                    </Button>
+                                ]}
+                            >
+                                <List.Item.Meta
+                                    title={<b>{item.name}</b>}
+                                    description={`Sức chứa: ${item.capacity} người | Trạng thái: ${item.status === 'available' ? 'Trống' : item.status === 'occupied' ? 'Có khách' : 'Đã đặt'}`}
+                                />
+                            </List.Item>
+                        )}
+                    />
+                </Modal>
+                <Modal
+                    title="Chọn bàn để xóa"
+                    open={isDeleteListModalOpen}
+                    onCancel={() => setIsDeleteListModalOpen(false)}
+                    footer={null} // Ẩn nút OK/Cancel mặc định
+                    centered
+                >
+                    <List
+                        dataSource={table}
+                        locale={{ emptyText: 'Không có bàn nào để xóa' }}
+                        renderItem={(item) => (
+                            <List.Item
+                                actions={[
+                                    // Dùng Popconfirm để hỏi lại trước khi xóa thật
+                                    <Popconfirm
+                                        title={`Xóa ${item.name}?`}
+                                        description="Bạn có chắc chắn muốn xóa bàn này không?"
+                                        onConfirm={() => handleDeleteTable(item.id)}
+                                        okText="Xóa ngay"
+                                        cancelText="Hủy"
+                                        placement="left"
+                                    >
+                                        <Button danger type="primary" icon={<DeleteOutlined />}>
+                                            Xóa
+                                        </Button>
+                                    </Popconfirm>
+                                ]}
+                            >
+                                <List.Item.Meta
+                                    title={<b>{item.name}</b>}
+                                    description={`Sức chứa: ${item.capacity} người | Trạng thái: ${item.status === 'available' ? 'Trống' : item.status === 'occupied' ? 'Có khách' : 'Đã đặt'}`}
+                                />
+                            </List.Item>
+                        )}
+                    />
+                </Modal>
+            </div>
             <Row gutter={[16, 16]}>
                 {table.map(item => (
                     <Col span={6} key={item.id}>

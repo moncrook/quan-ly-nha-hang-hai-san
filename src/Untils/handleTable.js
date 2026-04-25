@@ -39,8 +39,19 @@ export const handleAddProduct = (products, newProduct) => {
     return [...products, { ...newProduct, id: Date.now() }]; // Tạo ID tạm bằng thời gian
 };
 
+//sửa món ăn
 export const handleEditProduct = (products, updatedProduct) => {
     return products.map(p => p.id === updatedProduct.id ? updatedProduct : p);
+};
+
+//sửa bàn ăn
+export const handleEditTable = (tables, updatedTablle) => {
+    return tables.map(p => p.id === updatedTablle.id ? updatedTablle : p);
+};
+
+// Thêm logic xử lý danh sách bàn ăn
+export const handleAddTable = (tables, newTable) => {
+    return [...tables, { ...newTable, id: Date.now(), status: 'available' }]; // Tạo ID tạm bằng thời gian
 };
 
 export const handleDeleteProduct = (products, productId) => {

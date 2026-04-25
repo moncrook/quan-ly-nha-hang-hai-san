@@ -8,7 +8,6 @@ import { menuSeafood, handleAddProduct, handleEditProduct, handleDeleteProduct }
 const { Title } = Typography;
 
 const ProductPage = ({ products, setProducts }) => {
-    console.log("Dữ liệu món ăn hiện tại:", products);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingProduct, setEditingProduct] = useState(null);
     const [form] = Form.useForm();
@@ -19,6 +18,8 @@ const ProductPage = ({ products, setProducts }) => {
         // chỉ định theo loại
         const [selectedCategory, setSelectedCategory] = useState('Tất cả');
         const categories = ['Tất cả', 'Tôm', 'Cua', 'Mực', 'Ốc', 'Lẩu', 'Nước uống'];
+
+        
 
         const [imageUrl, setImageUrl] = useState(''); // State lưu ảnh tạm thời khi đang chọn
 
