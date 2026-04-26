@@ -185,7 +185,7 @@ const handleShowBill = () => {
     const finalTotal = calculateTotal(cart) * (1 - discount/100);
     const data = {
         tableName: selectedTable?.name,
-        items: cart,
+        orderItems: cart,
         subTotal: calculateTotal(cart),
         discount: discount,
         total: finalTotal,
@@ -220,7 +220,7 @@ const handleSelectPayment = () => {
     
     const data = {
         tableName: selectedTable.name,
-        items: cart,
+        orderItems: cart,
         total: calculateTotal(cart),
         time: new Date().toLocaleString('vi-VN'),
         staff: "Phan Xuân Nhạn"
@@ -547,7 +547,7 @@ const showModal = (product = null) => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {billData.items.map(item => (
+                                    {billData?.orderItems.map(item => (
                                         <tr key={item.id}>
                                             <td>{item.name}</td>
                                             <td>{item.qty}</td>
@@ -793,16 +793,6 @@ const showModal = (product = null) => {
                     </Form>
                 </Modal>
             <Drawer title={`Order - ${selectedTable?.name}`} width="100%" onClose={() => setOpen(false)} open={open}>
-                <Input.Search
-                    style={{padding: '20px'}}
-                    placeholder='nhập món muốn tìm kiếm'
-                    enterButton
-                    size='Large'
-                    allowClear
-                    onChange={(e) => setSearchText(e.target.value)} // Cập nhật từ khóa khi gõ
-                    onSearch={(value) => setSearchText(value)} // Cập nhật khi bấm nút kính lúp
-                />
-
                     <Drawer 
                         width="80%" 
                         title={` Chuyển bàn ${selectedTable?.name} đến bàn khác`} 
@@ -813,14 +803,6 @@ const showModal = (product = null) => {
                             .filter(it => it.status === 'available').map(it => (
                                 <Col span={6} key={it.id}>
                                     <Card hoverable onClick={() => handleTableClick(it)} 
-                                        // style={{
-                                        //     borderLeft: 
-                                        //         item.status === 'available'
-                                        //         ? '6px solid #52c41a'
-                                        //         : item.status === 'reserved'
-                                        //         ? '6px solid #faad14'
-                                        //         : '6px solid #ff4d4f'
-                                        //     }}
                                         >
                                         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                             <b>{it.name}</b>
@@ -829,12 +811,6 @@ const showModal = (product = null) => {
                                                 Trống
                                             </Tag>
                                         </div>
-                                        {/* {item.status === 'occupied' && (
-                                            <Button danger size="small" style={{marginTop: 10}} >
-                                                Thanh toán nhanh
-                                            </Button>
-                                            
-                                        )} */}
                                     </Card>
                                 </Col>
                             ))}
@@ -857,17 +833,28 @@ const showModal = (product = null) => {
                         style={{ fontSize: '18px', width: 64, height: 64 }} */}
                     {/* /> */}
                 <Row gutter={24}>
+                    
                     <Col span={4}>
-                        <Title level={5}>Danh mục</Title>
-                        <Menu
-                            mode="vertical"
-                            selectedKeys={[selectedCategory]}
-                            onClick={(e) => setSelectedCategory(e.key)}
-                            style={{ borderRadius: '8px', border: '1px solid #f0f0f0' }}
-                            items={categories.map(cat => ({ key: cat, label: cat }))}
-                        />
+                        <Card title="Danh mục" size="small" bodyStyle={{ padding: 0 }}>
+                            <Menu
+                                mode="vertical"
+                                selectedKeys={[selectedCategory]}
+                                onClick={(e) => setSelectedCategory(e.key)}
+                                style={{ borderRadius: '8px', border: '1px solid #f0f0f0' }}
+                                items={categories.map(cat => ({ key: cat, label: cat }))}
+                            />
+                        </Card>
                     </Col>
                     <Col span={12}>
+                        <Input.Search
+                            style={{marginBottom: 20}}
+                            placeholder='nhập món muốn tìm kiếm'
+                            enterButton
+                            size='Large'
+                            allowClear
+                            onChange={(e) => setSearchText(e.target.value)} // Cập nhật từ khóa khi gõ
+                            onSearch={(value) => setSearchText(value)} // Cập nhật khi bấm nút kính lúp
+                        />
                         <Row gutter={[16, 16]}>
                             {menuSeafood.filter(food => {
                                 // 1. Lọc theo Danh mục (Category)

@@ -2,8 +2,12 @@
 
 import React, { useState } from 'react';
 import { Card, Form, Input, Button, Typography, message, Layout, Table
-    ,Modal, Select
+    ,Modal, Select,
+    Space
  } from 'antd';
+
+ 
+import { PlusOutlined, EditOutlined, DeleteOutlined, PictureOutlined } from '@ant-design/icons';
 
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -23,9 +27,21 @@ const EmployeePage = ({ employees, setEmployees }) => {
         message.success("Cấp tài khoản nhân viên thành công!");
     };
 
+    const [editingEmployee, setEditingEmployee] = useState(null);
+
+    const showModal = (valua = null) => {
+        setEditingEmployee(valua);
+        if (valua) {
+            form.setFieldsValue(valua); // Đổ dữ liệu cũ vào form nếu là Sửa
+        } else {
+            form.resetFields(); // Xóa trắng form nếu là Thêm mới
+        }
+        setIsModalOpen(true);
+    };
+
     return (
         <div>
-            <Button type="primary" onClick={() => setIsModalOpen(true)}>Thêm nhân viên</Button>
+            <Button type="primary" onClick={() => showModal()}>Thêm nhân viên</Button>
             <Table 
                 dataSource={employees} 
                 columns={[
@@ -34,7 +50,12 @@ const EmployeePage = ({ employees, setEmployees }) => {
                     { title: 'Quyền hạn', dataIndex: 'role' },
                     { 
                         title: 'Thao tác', 
-                        render: (_, record) => <Button danger onClick={() => setEmployees(employees.filter(e => e.id !== record.id))}>Xóa</Button> 
+                        render: (_, record) =>(
+                            <Space>
+                                <Button icon={<EditOutlined />} onClick={() => showModal(record)}>Sửa</Button>
+                                <Button danger icon={<DeleteOutlined />} onClick={() => setEmployees(employees.filter(e => e.id !== record.id))}>Xóa</Button>
+                            </Space>
+                        )
                     }
                 ]} 
             />
@@ -47,14 +68,26 @@ const EmployeePage = ({ employees, setEmployees }) => {
                 onCancel={() => setIsModalOpen(false)}
             >
                 <Form form={form} layout="vertical" onFinish={handleAddEmployee}>
+                    <Form.Item name="ID" label="Căn Cước Công Dân" rules={[{ required: true }]}>
+                        <Input placeholder="046xxxxxx" />
+                    </Form.Item>
                     <Form.Item name="name" label="Họ tên" rules={[{ required: true }]}>
                         <Input placeholder="Nguyễn Văn A" />
+                    </Form.Item>
+                    <Form.Item name="sex" label="Giới tính" rules={[{ required: true }]}>
+                        <Select placeholder="Chọn chức vụ">
+                            <Select.Option value="STAFF">Nam</Select.Option>
+                            <Select.Option value="CASHIER">Nữ</Select.Option>
+                        </Select>
                     </Form.Item>
                     <Form.Item name="username" label="Tên đăng nhập" rules={[{ required: true }]}>
                         <Input placeholder="username123" />
                     </Form.Item>
                     <Form.Item name="password" label="Mật khẩu" rules={[{ required: true }]}>
                         <Input.Password />
+                    </Form.Item>
+                    <Form.Item name="address" label="địa chỉ" >
+                        <Input placeholder="phú xuân, thành phố Huế" />
                     </Form.Item>
                     <Form.Item name="role" label="Quyền hạn" rules={[{ required: true }]}>
                         <Select placeholder="Chọn chức vụ">

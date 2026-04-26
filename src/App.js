@@ -187,7 +187,10 @@ const App = () => {
                     <MainLayout user={user} setIsLoggedIn={setIsLoggedIn} currentShift={currentShift} openShift={openShift} // Phải có cái này
                         closeShift={closeShift}  // Phải có cái này
                     > {/* TRUYỀN THÊM USER VÀO ĐÂY */}
-                        <BillsPage billHistory={billHistory} currentShift={currentShift}/>
+                        <BillsPage billHistory={billHistory} 
+                                    currentShift={currentShift} 
+                                    setBillHistory={setBillHistory} 
+                                    menuSeafood={menuData}/>
                     </MainLayout>
                 } />
 
