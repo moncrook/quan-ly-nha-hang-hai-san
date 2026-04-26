@@ -15,7 +15,7 @@ import { Link } from 'react-router-dom';
 
 const { Title, Text } = Typography;
 
-const TablePage = ({ table, setTable, menuSeafood, user, setBillHistory }) => {
+const TablePage = ({ table, setTable, menuSeafood, user, setBillHistory, currentShift }) => {
     
     const [isBillModalOpen, setIsBillModalOpen] = useState(false);
     const [billData, setBillData] = useState(null);
@@ -331,13 +331,16 @@ const showModal = (product = null) => {
                 {/* Kiểm tra role: Chỉ render cụm nút này nếu user là ADMIN hoặc MANAGER */}
                 {(user?.role === 'ADMIN') && (
                     <div>
-                        <Button icon={<PlusOutlined />} onClick={() => showModal()}>
+                        <Button icon={<PlusOutlined />} onClick={() => showModal()} 
+                        disabled={!currentShift} >
                             thêm
                         </Button>
-                        <Button icon={<EditOutlined />} onClick={() => setIsEditListModalOpen(true)} style={{ margin: '0 10px' }}>
+                        <Button icon={<EditOutlined />} onClick={() => setIsEditListModalOpen(true)} style={{ margin: '0 10px' }}
+                        disabled={!currentShift}>
                             sửa
                         </Button>
-                        <Button danger icon={<DeleteOutlined />} onClick={() => setIsDeleteListModalOpen(true)}>
+                        <Button danger icon={<DeleteOutlined />} onClick={() => setIsDeleteListModalOpen(true)}
+                        disabled={!currentShift}>
                             xóa
                         </Button>
                     </div>
@@ -492,6 +495,7 @@ const showModal = (product = null) => {
                             size="large" 
                             style={{ flex: 1, height: '80px', backgroundColor: '#faad14' }}
                             onClick={handleSelectOrder}
+                            disabled={!currentShift}
                         >
                             🛒 ORDER MÓN
                         </Button> 
@@ -501,6 +505,7 @@ const showModal = (product = null) => {
                             size="large" 
                             style={{ flex: 1, height: '80px' }}
                             // disabled={selectedTable?.status==='reserved'}
+                            disabled={!currentShift}
                             onClick={selectedTable?.status==='reserved'? ()=>HuyDatBan(selectedTable) : handleDatBan }
                         >
                             {selectedTable?.status==='reserved'? "Hủy đặt bàn" : "Đặt bàn" }

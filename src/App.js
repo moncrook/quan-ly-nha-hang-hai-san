@@ -155,6 +155,7 @@ const App = () => {
                                     setBillHistory={setBillHistory} 
                                     setIsLoggedIn={setIsLoggedIn}
                                     menuSeafood={menuData} // Truyền danh sách món vào đây
+                                    currentShift={currentShift}
                                     user={user}/>
                             </MainLayout>
                         ) : <Navigate to="/login" />

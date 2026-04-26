@@ -78,8 +78,16 @@ const MainLayout = ({ children, user, setIsLoggedIn, currentShift, openShift, cl
 
     // 2. Lọc danh sách dựa trên role của user truyền từ App.js xuống
     const filteredItems = allMenuItems.filter(item => {
-        // Nếu không có user, hoặc không có role, hoặc role không nằm trong danh sách quyền thì loại bỏ
-        return user?.role && item.roles.includes(user.role);
+        const hasRole = user?.role && item.roles.includes(user.role);
+    
+        // 2. Kiểm tra trạng thái ca (Chỗ Nhạn cần thêm)
+        // Nếu chưa mở ca, chỉ cho phép hiện Sơ đồ bàn (key: '1') và Đăng xuất (key: '7')
+        // Các mục khác như Đặt bàn, Hóa đơn, Thực đơn, Nhân viên sẽ bị ẩn.
+        if (!currentShift) {
+            return hasRole && (item.key === '1' || item.key === '7');
+        }
+
+        return hasRole;
     });
 
 
