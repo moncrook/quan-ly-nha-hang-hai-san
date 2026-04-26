@@ -16,19 +16,13 @@ const BillsPage = ({ billHistory, setBillHistory, currentShift, menuSeafood }) =
     // Mở modal sửa
     // Trong hàm handleEdit, hãy giữ logic kiểm tra an toàn này để không bao giờ bị crash nữa
     const handleEdit = (record) => {
-        // Ép kiểu dữ liệu: Nếu không có món nào thì phải là mảng rỗng []
-        const safeOrderItems = Array.isArray(record.orderItems) 
-            ? record.orderItems 
-            : (Array.isArray(record.items) ? record.items : []);
-
-        setEditingBill({ 
-            ...record, 
-            orderItems: [...safeOrderItems] // Clone mảng để tránh lỗi tham chiếu
-        });
+        const rawItems = record.orderItems || record.items || [];
+        setEditingBill({ ...record, orderItems: [...rawItems] });
 
         form.setFieldsValue({
             staff: record.staff,
-            discount: record.discount || 0
+            discount: record.discount || 0,
+            paymentMethod: record.paymentMethod || 'Tiền mặt' // Mặc định nếu cũ chưa có
         });
         setIsEditModalOpen(true);
     };
@@ -157,8 +151,17 @@ const BillsPage = ({ billHistory, setBillHistory, currentShift, menuSeafood }) =
             >
                 <Form form={form} layout="vertical" onFinish={handleSaveEdit}>
                     <Row gutter={16}>
-                        <Col span={12}><Form.Item name="staff" label="Nhân viên"><Input /></Form.Item></Col>
-                        <Col span={12}><Form.Item name="discount" label="Giảm giá (%)"><InputNumber min={0} max={100} style={{ width: '100%' }} /></Form.Item></Col>
+                        <Col span={8}><Form.Item name="staff" label="Nhân viên"><Input /></Form.Item></Col>
+                        <Col span={8}>
+                            <Form.Item name="paymentMethod" label="P.Thức Thanh Toán">
+                                <Select>
+                                    <Select.Option value="Tiền mặt">💵 Tiền mặt</Select.Option>
+                                    <Select.Option value="Chuyển khoản">💳 Chuyển khoản</Select.Option>
+                                    <Select.Option value="Thẻ">🏧 Quẹt thẻ</Select.Option>
+                                </Select>
+                            </Form.Item>
+                        </Col>
+                        <Col span={8}><Form.Item name="discount" label="Giảm giá (%)"><InputNumber min={0} max={100} style={{ width: '100%' }} /></Form.Item></Col>
                     </Row>
 
                     <div style={{ marginBottom: 15, padding: '10px', background: '#f0f5ff', borderRadius: 8 }}>
