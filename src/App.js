@@ -118,19 +118,32 @@ const App = () => {
 
         // Đóng ca
         const closeShift = (actualCash) => {
+           // 1. Lưu dữ liệu ca vừa đóng vào lịch sử
             const finalShiftData = {
                 ...currentShift,
                 endTime: new Date().toLocaleString('vi-VN'),
                 actualCash: actualCash,
-                expectedCash: currentShift.openingBalance + currentShift.cashRevenue,
+                expectedCash: (currentShift?.openingBalance || 0) + (currentShift?.cashRevenue || 0),
+            };
+            setShiftHistory([...shiftHistory, finalShiftData]);
+
+            // 2. QUAN TRỌNG: Đưa ca về null để khóa các chức năng
+            setCurrentShift(null); 
+
+            // 3. KHÔNG gọi setIsLoggedIn(false) nếu muốn Admin vẫn ở lại giao diện
+            // Chỉ thông báo cho người dùng
+            message.success("Đã kết thúc ca làm việc. Hệ thống đã quay về trạng thái chờ mở ca.");
+            
+            // 4. Đẩy Admin về trang Sơ đồ bàn để họ thấy nút Mở ca mới
+            // (Nếu Nhạn dùng navigate ở đây thì phải import useNavigate)
+            window.location.href = "/table";
             };
             
-            setShiftHistory([...shiftHistory, finalShiftData]);
-            setCurrentShift(null); // Reset ca về null
-            setIsLoggedIn(false);  // Đuổi tất cả ra trang Login
-            setUser(null);
-            message.warning("Đã đóng ca. Hệ thống tạm dừng phục vụ nhân viên!");
-        };
+            // setShiftHistory([...shiftHistory, finalShiftData]);
+            // setCurrentShift(null); // Reset ca về null
+            // setIsLoggedIn(false);  // Đuổi tất cả ra trang Login
+            // setUser(null);
+            // message.warning("Đã đóng ca. Hệ thống tạm dừng phục vụ nhân viên!");
 
     return (
         <BrowserRouter>
@@ -172,9 +185,9 @@ const App = () => {
 
                 <Route path="/bills" element={
                     <MainLayout user={user} setIsLoggedIn={setIsLoggedIn} currentShift={currentShift} openShift={openShift} // Phải có cái này
-                        closeShift={closeShift} // Phải có cái này
+                        closeShift={closeShift}  // Phải có cái này
                     > {/* TRUYỀN THÊM USER VÀO ĐÂY */}
-                        <BillsPage billHistory={billHistory}/>
+                        <BillsPage billHistory={billHistory} currentShift={currentShift}/>
                     </MainLayout>
                 } />
 

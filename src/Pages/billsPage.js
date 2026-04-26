@@ -4,9 +4,9 @@ import { DollarCircleOutlined, FileTextOutlined, MoreOutlined } from '@ant-desig
 
 const { Title } = Typography;
 
-const BillsPage = ({billHistory})=>{
+const BillsPage = ({billHistory, currentShift})=>{
     
-    const totalRevenue = billHistory.reduce((sum, bill) => sum + bill.total, 0);
+    // const totalRevenue = billHistory.reduce((sum, bill) => sum + bill.total, 0);
 
     const menuBills=[
         {
@@ -33,6 +33,10 @@ const BillsPage = ({billHistory})=>{
             render: (total) => <b style={{ color: '#52c41a' }}>{total.toLocaleString()}đ</b> 
         },
     ];
+
+    const totalBillsAmount = billHistory.reduce((sum, bill) => sum + bill.total, 0); // Tổng tiền từ các hóa đơn
+    const openingAmount = currentShift ? currentShift.openingBalance : 0; // Tiền mặt lúc mở ca
+    const totalRevenue = totalBillsAmount + openingAmount; // Tổng doanh thu cuối cùng
 
     
     return (
@@ -64,6 +68,9 @@ const BillsPage = ({billHistory})=>{
                             prefix={<DollarCircleOutlined />}
                             suffix="VNĐ"
                         />
+                        <p style={{ fontSize: '12px', color: '#888' }}>
+                            (Tiền hóa đơn: {totalBillsAmount.toLocaleString()} + Tiền mở ca: {openingAmount.toLocaleString()})
+                        </p>
                     </Card>
                 </Col>
                 <Col span={12}>
