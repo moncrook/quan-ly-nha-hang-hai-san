@@ -31,13 +31,13 @@ const App = () => {
 
     const [table, setTable] = useState([
             { id: 1, name: 'Bàn số 1', status: 'available', capacity: 4, orderItems: [] },
-            { id: 2, name: 'Bàn số 2', status: 'occupied', capacity: 4, orderItems: [{ id: 101, name: 'Tôm Hùm', price: 750000, qty: 1 }] },
+            { id: 2, name: 'Bàn số 2', status: 'available', capacity: 4, orderItems: [] },
             { id: 3, name: 'Bàn số 3', status: 'available', capacity: 4, orderItems: [] },
-            { id: 4, name: 'Bàn số 4', status: 'reserved', capacity: 4, orderItems: [] },
+            { id: 4, name: 'Bàn số 4', status: 'available', capacity: 4, orderItems: [] },
             { id: 5, name: 'Bàn số 5', status: 'available', capacity: 4, orderItems: [] },
             { id: 6, name: 'Bàn số 6', status: 'available', capacity: 4, orderItems: [] },
             { id: 7, name: 'Bàn số 7', status: 'available', capacity: 4, orderItems: [] },
-            { id: 8, name: 'Bàn số 8', status: 'reserved', capacity: 4, orderItems: [] },
+            { id: 8, name: 'Bàn số 8', status: 'available', capacity: 4, orderItems: [] },
             { id: 9, name: 'Bàn số 9', status: 'available', capacity: 4, orderItems: [] },
             { id: 10, name: 'Bàn số 10', status: 'available', capacity: 4, orderItems: [] },
             // ... (copy nốt các bàn khác của bạn vào đây)
@@ -161,6 +161,7 @@ const App = () => {
                             <MainLayout setIsLoggedIn={setIsLoggedIn} user={user}
                                  currentShift={currentShift} openShift={openShift} // Phải có cái này
                                  closeShift={closeShift}
+                                 billHistory={billHistory}
                             > {/* TRUYỀN THÊM USER VÀO ĐÂY */}
                                 <TablePage 
                                     table={table} 
@@ -178,6 +179,7 @@ const App = () => {
                 <Route path="/booking" element={
                     <MainLayout user={user} setIsLoggedIn={setIsLoggedIn} currentShift={currentShift} openShift={openShift} // Phải có cái này
                     closeShift={closeShift} // Phải có cái này
+                    billHistory={billHistory}
                 > {/* TRUYỀN THÊM USER VÀO ĐÂY */}
                         <BookingPage tableData={table} setTableData={setTable} />
                     </MainLayout>
@@ -186,6 +188,7 @@ const App = () => {
                 <Route path="/bills" element={
                     <MainLayout user={user} setIsLoggedIn={setIsLoggedIn} currentShift={currentShift} openShift={openShift} // Phải có cái này
                         closeShift={closeShift}  // Phải có cái này
+                        billHistory={billHistory}
                     > {/* TRUYỀN THÊM USER VÀO ĐÂY */}
                         <BillsPage billHistory={billHistory} 
                                     currentShift={currentShift} 
@@ -198,6 +201,7 @@ const App = () => {
                     user?.role === 'ADMIN' 
                     ? <MainLayout user={user} setIsLoggedIn={setIsLoggedIn} currentShift={currentShift}openShift={openShift} // Phải có cái này
                         closeShift={closeShift} // Phải có cái này
+                        billHistory={billHistory}
                     >
                         <EmployeePage employees={employees} setEmployees={setEmployees} />
                     </MainLayout>
@@ -209,6 +213,7 @@ const App = () => {
                     ? <MainLayout user={user} setIsLoggedIn={setIsLoggedIn} currentShift={currentShift} 
                             openShift={openShift} // Phải có cái này
                             closeShift={closeShift} // Phải có cái này
+                            billHistory={billHistory}
                         >
                         <ProductPage 
                             products={menuData} 

@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { Layout, Menu, Button, Tag, Modal, InputNumber } from 'antd';
+import { Layout, Menu, Button, Tag, Modal, InputNumber,
+    Col, Row, Typography
+ } from 'antd';
 import { 
     MenuUnfoldOutlined, 
     MenuFoldOutlined, 
@@ -13,9 +15,10 @@ import {
 } from '@ant-design/icons';
 import { Link, useNavigate } from 'react-router-dom';
 
-const { Header, Sider, Content } = Layout;
+const { Header, Sider, Content} = Layout;
+const {Title, Text} =Typography
 
-const MainLayout = ({ children, user, setIsLoggedIn, currentShift, openShift, closeShift }) => {
+const MainLayout = ({ children, user, setIsLoggedIn, currentShift, openShift, closeShift, billHistory }) => {
     const [collapsed, setCollapsed] = useState(true); // Trạng thái đóng/mở menu
     const navigate = useNavigate();
 
@@ -90,6 +93,11 @@ const MainLayout = ({ children, user, setIsLoggedIn, currentShift, openShift, cl
         return hasRole;
     });
 
+    const currentShiftBills = billHistory || []; 
+    const totalRevenueInShift = currentShiftBills.reduce((sum, bill) => sum + (bill.total || 0), 0);
+    const totalBillsCount = currentShiftBills.length;
+    const expectedCash = (currentShift?.openingBalance || 0) + totalRevenueInShift;
+
 
     return (
         <Layout style={{ minHeight: '100vh' }}>
@@ -146,7 +154,7 @@ const MainLayout = ({ children, user, setIsLoggedIn, currentShift, openShift, cl
                 </Content>
             </Layout>
             {/* Đặt đoạn này ngay trước thẻ đóng </Layout> cuối cùng */}
-            <Modal
+            {/* <Modal
                 title={currentShift ? "XÁC NHẬN ĐÓNG CA" : "MỞ CA LÀM VIỆC MỚI"}
                 open={isShiftModalOpen}
                 onOk={handleConfirmShift}
@@ -161,6 +169,76 @@ const MainLayout = ({ children, user, setIsLoggedIn, currentShift, openShift, cl
                     formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
                     onChange={(val) => setTempCash(val || 0)}
                 />
+            </Modal> */}
+            <Modal
+                title="XÁC NHẬN KẾT THÚC CA LÀM VIỆC"
+                open={isShiftModalOpen}
+                onOk={handleConfirmShift}
+                onCancel={() => setIsShiftModalOpen(false)}
+                width={500}
+                okText="Xác nhận đóng ca"
+                cancelText="Hủy"
+            >
+                {currentShift ? (
+                    <div>
+                        <div style={{ background: '#f5f5f5', padding: '15px', borderRadius: '8px', marginBottom: '20px' }}>
+                            <Row gutter={[16, 16]}>
+                                <Col span={12}>
+                                    <Text type="secondary">Số lượng hóa đơn:</Text>
+                                    <Title level={4} style={{ margin: 0 }}>{totalBillsCount} HĐ</Title>
+                                </Col>
+                                <Col span={12}>
+                                    <Text type="secondary">Doanh thu hóa đơn:</Text>
+                                    <Title level={4} style={{ margin: 0, color: '#52c41a' }}>
+                                        {totalRevenueInShift.toLocaleString()}đ
+                                    </Title>
+                                </Col>
+                                <Col span={12}>
+                                    <Text type="secondary">Tiền mặt đầu ca:</Text>
+                                    <Title level={5} style={{ margin: 0 }}>
+                                        {currentShift.openingBalance.toLocaleString()}đ
+                                    </Title>
+                                </Col>
+                                <Col span={12}>
+                                    <Text type="secondary">Tổng tiền lý thuyết:</Text>
+                                    <Title level={4} style={{ margin: 0, color: '#1890ff' }}>
+                                        {expectedCash.toLocaleString()}đ
+                                    </Title>
+                                </Col>
+                            </Row>
+                        </div>
+
+                        <p><b>Nhập số tiền mặt thực tế kiểm kê tại quầy:</b></p>
+                        <InputNumber
+                            style={{ width: '100%' }}
+                            min={0}
+                            formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                            onChange={(val) => setTempCash(val || 0)}
+                            placeholder="0"
+                            size="large"
+                        />
+                        {tempCash > 0 && (
+                            <div style={{ marginTop: 10 }}>
+                                <Text italic color={tempCash >= expectedCash ? 'green' : 'red'}>
+                                    {tempCash >= expectedCash 
+                                        ? `Dư: ${(tempCash - expectedCash).toLocaleString()}đ` 
+                                        : `Hụt: ${(expectedCash - tempCash).toLocaleString()}đ`}
+                                </Text>
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    <div>
+                        <p>Nhập số tiền mặt đầu ca (tiền lẻ):</p>
+                        <InputNumber
+                            style={{ width: '100%' }}
+                            min={0}
+                            formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                            onChange={(val) => setTempCash(val || 0)}
+                            size="large"
+                        />
+                    </div>
+                )}
             </Modal>
         </Layout>
     );
