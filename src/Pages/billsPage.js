@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Table, Card, Row, Col, Statistic, Typography, Dropdown, 
-    Space, Button, Modal, Form, InputNumber, Popconfirm, message, Input, Select } from 'antd';
+    Space, Button, Modal, Form, InputNumber, Popconfirm, message, Input, Select,
+    Tag
+ } from 'antd';
 import { DollarCircleOutlined, FileTextOutlined, MoreOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
@@ -113,13 +115,130 @@ const BillsPage = ({ billHistory, setBillHistory, currentShift, menuSeafood }) =
     const openingAmount = currentShift ? currentShift.openingBalance : 0;
     const totalRevenue = totalBillsAmount + openingAmount;
 
+
+    const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+    const [reportData, setReportData] = useState({ title: '', total: 0, count: 0, dailyDetails: [] });
+
+    // Hàm xử lý tạo báo cáo
+    const generateReport = (type) => {
+        const now = new Date();
+        let title = '';
+        let filteredBills = [];
+
+        if (type === 'day') {
+            const todayStr = now.toLocaleDateString('vi-VN');
+            title = `BÁO CÁO DOANH THU NGÀY ${todayStr}`;
+            filteredBills = billHistory.filter(bill => bill.time.includes(todayStr));
+            
+            setReportData({
+                title,
+                total: filteredBills.reduce((sum, b) => sum + b.total, 0),
+                count: filteredBills.length,
+                details: filteredBills, // Hiện danh sách hóa đơn chi tiết
+                type: 'day'
+            });
+        } else {
+            const monthStr = `${now.getMonth() + 1}/${now.getFullYear()}`;
+            title = `BÁO CÁO CHI TIẾT THÁNG ${monthStr}`;
+            
+            // 1. Lọc hóa đơn trong tháng
+            filteredBills = billHistory.filter(bill => bill.time.includes(monthStr));
+
+            // 2. Nhóm dữ liệu theo từng ngày
+            const grouped = filteredBills.reduce((acc, bill) => {
+                // Tách lấy phần ngày từ chuỗi "14:30:00, 26/04/2026" -> lấy "26/04/2026"
+                const dateKey = bill.time.split(', ')[1] || bill.time.split(' ')[1]; 
+                if (!acc[dateKey]) {
+                    acc[dateKey] = { date: dateKey, dailyTotal: 0, dailyCount: 0 };
+                }
+                acc[dateKey].dailyTotal += bill.total;
+                acc[dateKey].dailyCount += 1;
+                return acc;
+            }, {});
+
+            // Chuyển object thành mảng và sắp xếp theo ngày giảm dần
+            const dailyArray = Object.values(grouped).sort((a, b) => b.date.localeCompare(a.date));
+
+            setReportData({
+                title,
+                total: filteredBills.reduce((sum, b) => sum + b.total, 0),
+                count: filteredBills.length,
+                dailyDetails: dailyArray, // Hiện danh sách tổng hợp từng ngày
+                type: 'month'
+            });
+        }
+        setIsReportModalOpen(true);
+    };
+
     return (
         <div style={{ padding: '20px' }}>
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <Dropdown menu={{ items: [{key:'1', label:'Báo cáo ngày'}, {key:'2', label:'Báo cáo tháng'}] }} trigger={['click']}>
+                <Dropdown 
+                    menu={{ 
+                        items: [
+                            {key:'1', label:'Báo cáo ngày', onClick: () => generateReport('day') }, 
+                            {key:'2', label:'Báo cáo tháng', onClick: () => generateReport('month')}
+                        ] }} trigger={['click']}
+                >
                     <MoreOutlined style={{ transform: 'rotate(90deg)', fontSize: 18, cursor: 'pointer' }} />
                 </Dropdown>
             </div>
+            <Modal
+                title={<Title level={3} style={{ color: '#096dd9' }}>{reportData.title}</Title>}
+                open={isReportModalOpen}
+                onCancel={() => setIsReportModalOpen(false)}
+                width={700}
+                footer={[<Button key="ok" type="primary" onClick={() => setIsReportModalOpen(false)}>Đóng</Button>]}
+            >
+                {/* Thống kê tổng quát tháng */}
+                <Row gutter={16} style={{ marginBottom: 20 }}>
+                    <Col span={12}>
+                        <Card size="small" style={{ background: '#f6ffed', borderLeft: '5px solid #52c41a' }}>
+                            <Statistic title="TỔNG DOANH THU THÁNG" value={reportData.total} suffix="đ" valueStyle={{ color: '#3f8600', fontWeight: 'bold' }} />
+                        </Card>
+                    </Col>
+                    <Col span={12}>
+                        <Card size="small" style={{ background: '#e6f7ff', borderLeft: '5px solid #1890ff' }}>
+                            <Statistic title="TỔNG HÓA ĐƠN" value={reportData.count} suffix="HĐ" />
+                        </Card>
+                    </Col>
+                </Row>
+
+                <Text strong style={{ fontSize: '16px' }}>
+                    {reportData.type === 'month' ? "📅 Chi tiết doanh thu từng ngày:" : "📄 Danh sách hóa đơn trong ngày:"}
+                </Text>
+
+                <Table
+                    style={{ marginTop: 10 }}
+                    dataSource={reportData.type === 'month' ? reportData.dailyDetails : reportData.details}
+                    rowKey={(record) => record.date || record.id}
+                    pagination={{ pageSize: 7 }}
+                    columns={
+                        reportData.type === 'month' 
+                        ? [
+                            { title: 'Ngày', dataIndex: 'date', key: 'date' },
+                            { title: 'Số hóa đơn', dataIndex: 'dailyCount', key: 'dailyCount', align: 'center', render: (c) => <Tag color="blue">{c} HĐ</Tag> },
+                            { title: 'Doanh thu ngày', dataIndex: 'dailyTotal', key: 'dailyTotal', align: 'right', render: (v) => <b>{v.toLocaleString()}đ</b> },
+                        ]
+                        : [
+                            { title: 'Mã HĐ', dataIndex: 'id', render: (id) => `#${id.toString().slice(-6)}` },
+                            { title: 'Bàn', dataIndex: 'tableName' },
+                            { title: 'Tổng tiền', dataIndex: 'total', render: (v) => <b>{v.toLocaleString()}đ</b> },
+                        ]
+                    }
+                    summary={(pageData) => {
+                        if (reportData.type === 'month') {
+                            return (
+                                <Table.Summary.Row style={{ background: '#fafafa' }}>
+                                    <Table.Summary.Cell index={0}><b>TỔNG CỘNG</b></Table.Summary.Cell>
+                                    <Table.Summary.Cell index={1} align="center"><b>{reportData.count} HĐ</b></Table.Summary.Cell>
+                                    <Table.Summary.Cell index={2} align="right"><b style={{ color: 'red' }}>{reportData.total.toLocaleString()}đ</b></Table.Summary.Cell>
+                                </Table.Summary.Row>
+                            );
+                        }
+                    }}
+                />
+            </Modal>
             
             <Title level={2}>🧾 QUẢN LÝ HÓA ĐƠN</Title>
 

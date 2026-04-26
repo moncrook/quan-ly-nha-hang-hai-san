@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 
 import { Row, InputNumber, 
      Col,Card,Tag,Button, Drawer, Input, List, Avatar, message, 
-     Popconfirm, Typography, Modal, Menu,Dropdown, Form, Select  } from 'antd';
+     Popconfirm, Typography, Modal, Menu,Dropdown, Form, Select, Alert  } from 'antd';
 
 import { PlusOutlined, MinusOutlined, DeleteOutlined, MoneyCollectOutlined, QrcodeOutlined,
      MoreOutlined, EditOutlined } from '@ant-design/icons';
@@ -21,6 +21,52 @@ const TablePage = ({ table, setTable, menuSeafood, user, setBillHistory, current
     const [billData, setBillData] = useState(null);
     const [isActionModalOpen, setIsActionModalOpen] = useState(false);
 
+    const [isTransferModalOpen, setIsTransferModalOpen] = useState(false); // Modal chuyển/gộp
+    const [targetTableId, setTargetTableId] = useState(null); // Bàn đích được chọn
+    const [transferType, setTransferType] = useState('move'); // 'move' là chuyển, 'merge' là gộp
+
+    const handleTransferMergeTable = () => {
+        if (!targetTableId) {
+            message.warning("Vui lòng chọn bàn đích!");
+            return;
+        }
+
+        const targetTable = table.find(t => t.id === targetTableId);
+        
+        const updatedTables = table.map(t => {
+            // 1. Xử lý BÀN ĐI (Bàn đang chọn hiện tại)
+            if (t.id === selectedTable.id) {
+                return { ...t, status: 'available', orderItems: [] };
+            }
+
+            // 2. Xử lý BÀN ĐẾN
+            if (t.id === targetTableId) {
+                let newOrderItems = [];
+                if (transferType === 'move') {
+                    // Chuyển: Lấy toàn bộ món từ bàn cũ sang (đè lên bàn mới)
+                    newOrderItems = [...selectedTable.orderItems];
+                } else {
+                    // Gộp: Cộng dồn món cũ và món mới
+                    // Nhạn có thể dùng logic gộp các món trùng ID ở đây nếu muốn xịn hơn
+                    newOrderItems = [...t.orderItems, ...selectedTable.orderItems];
+                }
+
+                return { 
+                    ...t, 
+                    status: 'occupied', 
+                    orderItems: newOrderItems 
+                };
+            }
+            return t;
+        });
+
+        setTable(updatedTables);
+        setIsTransferModalOpen(false);
+        setIsActionModalOpen(false);
+        setOpen(false); // Đóng luôn drawer order nếu đang mở
+        setTargetTableId(null);
+        message.success(`${transferType === 'move' ? 'Chuyển' : 'Gộp'} bàn thành công!`);
+    };
 
     //mở modal bàn để ctheem bàn mới
     const [isModalTableOpen,setIsModalTableOpen]=useState(false);
@@ -59,18 +105,26 @@ const TablePage = ({ table, setTable, menuSeafood, user, setBillHistory, current
     const [tienMatModalOpen, setTienMatModalOpen]=useState(false)
 
     
-const menuItems = [
-  {
-    key: '1',
-    label: 'gộp bàn',
-    // onClick: () => handleEdit(item),
-  },
-  {
-        key: '2',
-        label: 'Chuyển bàn',
-        onClick: () => setChuyenBanOpen(true),
-  },
-];
+    const menuItems = [
+        {
+            key: '1',
+            label: 'Gộp bàn',
+            onClick: () => {
+                setTargetTableId(null);
+                setTransferType('merge');
+                setIsTransferModalOpen(true);
+            },
+        },
+        {
+            key: '2',
+            label: 'Chuyển bàn',
+            onClick: () => {
+                setTargetTableId(null);
+                setTransferType('move');
+                setIsTransferModalOpen(true);
+            },
+        },
+    ];
 //Hủy đặt bàn
     const HuyDatBan=(item)=>{
             const update=HuyDatBanLogic(table, item.id);
@@ -793,30 +847,6 @@ const showModal = (product = null) => {
                     </Form>
                 </Modal>
             <Drawer title={`Order - ${selectedTable?.name}`} width="100%" onClose={() => setOpen(false)} open={open}>
-                    <Drawer 
-                        width="80%" 
-                        title={` Chuyển bàn ${selectedTable?.name} đến bàn khác`} 
-                        onClose={() => setChuyenBanOpen(false)} 
-                        open={openChuyenBan}>
-                        <Row gutter={[16, 16]}>
-                            {table
-                            .filter(it => it.status === 'available').map(it => (
-                                <Col span={6} key={it.id}>
-                                    <Card hoverable onClick={() => handleTableClick(it)} 
-                                        >
-                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                            <b>{it.name}</b>
-                                            <Tag color='yellow' >sức chứa: {it.capacity}</Tag>
-                                            <Tag color='green'>
-                                                Trống
-                                            </Tag>
-                                        </div>
-                                    </Card>
-                                </Col>
-                            ))}
-                        </Row>
-                    </Drawer>
-
                 {/* <Sider trigger={null} collapsible collapsed={collapsed} theme="dark">
                     <Menu 
                         mode='inline'
@@ -964,6 +994,46 @@ const showModal = (product = null) => {
                     </Col>
                 </Row>
             </Drawer>
+            <Modal
+                title={transferType === 'move' ? `CHUYỂN BÀN: ${selectedTable?.name}` : `GỘP BÀN: ${selectedTable?.name}`}
+                open={isTransferModalOpen}
+                onOk={handleTransferMergeTable}
+                onCancel={() => {setIsTransferModalOpen(false)}}
+                okText="Xác nhận"
+                cancelText="Hủy"
+            >
+                <div style={{ marginBottom: '15px' }}>
+                    <Text strong>Chọn bàn đích:</Text>
+                    <Select
+                        style={{ width: '100%', marginTop: '10px' }}
+                        placeholder="Chọn bàn để thực hiện..."
+                        value={targetTableId}
+                        onChange={(val) => setTargetTableId(val)}
+                    >
+                        {table
+                            .filter(t => t.id !== selectedTable?.id) // Không hiện bàn hiện tại
+                            .filter(t => {
+                                // Nếu là CHUYỂN: Chỉ hiện bàn trống
+                                if (transferType === 'move') return t.status === 'available';
+                                // Nếu là GỘP: Chỉ hiện bàn đang có khách
+                                return t.status === 'occupied';
+                            })
+                            .map(t => (
+                                <Select.Option key={t.id} value={t.id}>
+                                    {t.name} ({t.status === 'available' ? 'Trống' : 'Có khách'})
+                                </Select.Option>
+                            ))
+                        }
+                    </Select>
+                </div>
+                <Alert 
+                    message={transferType === 'move' 
+                        ? "Lưu ý: Toàn bộ hóa đơn sẽ được chuyển sang bàn mới." 
+                        : "Lưu ý: Món ăn của bàn này sẽ được cộng dồn vào bàn đích."} 
+                    type="info" 
+                    showIcon 
+                />
+            </Modal>
         </div>
     );
 };
