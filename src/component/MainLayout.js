@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Layout, Menu, Button, Tag, Modal, InputNumber,
-    Col, Row, Typography
+    Col, Row, Typography, message, Alert
  } from 'antd';
 import { 
     MenuUnfoldOutlined, 
@@ -18,7 +18,7 @@ import { Link, useNavigate } from 'react-router-dom';
 const { Header, Sider, Content} = Layout;
 const {Title, Text} =Typography
 
-const MainLayout = ({ children, user, setIsLoggedIn, currentShift, openShift, closeShift, billHistory }) => {
+const MainLayout = ({table, children, user, setIsLoggedIn, currentShift, openShift, closeShift, billHistory }) => {
     const [collapsed, setCollapsed] = useState(true); // Trạng thái đóng/mở menu
     const navigate = useNavigate();
 
@@ -30,6 +30,14 @@ const MainLayout = ({ children, user, setIsLoggedIn, currentShift, openShift, cl
         if (!currentShift) {
             openShift(tempCash); // Gọi hàm mở ca từ App.js
         } else {
+            const activeTables = table.filter(t => t.status === 'occupied' || t.status === 'reserved');
+
+            if (activeTables.length > 0) {
+                // Nếu còn bàn chưa trống, hiện thông báo lỗi và không đóng Modal
+                const tableNames = activeTables.map(t => t.name).join(', ');
+                message.error(`Không thể đóng ca! Vẫn còn bàn chưa thanh toán hoặc đang đặt: ${tableNames}`);
+                return; // 🛑 Dừng lại, không cho chạy lệnh closeShift bên dưới
+            }
             closeShift(tempCash); // Gọi hàm đóng ca từ App.js
         }
         setIsShiftModalOpen(false);
@@ -181,6 +189,17 @@ const MainLayout = ({ children, user, setIsLoggedIn, currentShift, openShift, cl
             >
                 {currentShift ? (
                     <div>
+                        {/* Kiểm tra nhanh số bàn đang hoạt động */}
+                        {table.filter(t => t.status !== 'available').length > 0 && (
+                            <Alert 
+                                message="CẢNH BÁO: Còn bàn đang hoạt động"
+                                description="Bạn phải thanh toán hết cho khách hoặc hủy các lịch đặt bàn trước khi đóng ca."
+                                type="error"
+                                showIcon
+                                style={{ marginBottom: 15 }}
+                            />
+                        )}
+
                         <div style={{ background: '#f5f5f5', padding: '15px', borderRadius: '8px', marginBottom: '20px' }}>
                             <Row gutter={[16, 16]}>
                                 <Col span={12}>

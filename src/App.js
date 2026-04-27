@@ -163,6 +163,7 @@ const App = () => {
                                  currentShift={currentShift} openShift={openShift} // Phải có cái này
                                  closeShift={closeShift}
                                  billHistory={billHistory}
+                                 table={table}
                             > {/* TRUYỀN THÊM USER VÀO ĐÂY */}
                                 <TablePage 
                                     table={table} 
@@ -181,6 +182,7 @@ const App = () => {
                     <MainLayout user={user} setIsLoggedIn={setIsLoggedIn} currentShift={currentShift} openShift={openShift} // Phải có cái này
                     closeShift={closeShift} // Phải có cái này
                     billHistory={billHistory}
+                    table={table}
                 > {/* TRUYỀN THÊM USER VÀO ĐÂY */}
                         <BookingPage tableData={table} setTableData={setTable} />
                     </MainLayout>
@@ -190,6 +192,7 @@ const App = () => {
                     <MainLayout user={user} setIsLoggedIn={setIsLoggedIn} currentShift={currentShift} openShift={openShift} // Phải có cái này
                         closeShift={closeShift}  // Phải có cái này
                         billHistory={billHistory}
+                        table={table}
                     > {/* TRUYỀN THÊM USER VÀO ĐÂY */}
                         <BillsPage billHistory={billHistory} 
                                     currentShift={currentShift} 
@@ -203,6 +206,7 @@ const App = () => {
                     ? <MainLayout user={user} setIsLoggedIn={setIsLoggedIn} currentShift={currentShift}openShift={openShift} // Phải có cái này
                         closeShift={closeShift} // Phải có cái này
                         billHistory={billHistory}
+                        table={table}
                     >
                         <EmployeePage employees={employees} setEmployees={setEmployees} />
                     </MainLayout>
@@ -215,6 +219,7 @@ const App = () => {
                             openShift={openShift} // Phải có cái này
                             closeShift={closeShift} // Phải có cái này
                             billHistory={billHistory}
+                            table={table}
                         >
                         <ProductPage 
                             products={menuData} 
