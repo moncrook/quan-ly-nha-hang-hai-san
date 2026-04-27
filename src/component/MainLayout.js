@@ -171,7 +171,7 @@ const MainLayout = ({ children, user, setIsLoggedIn, currentShift, openShift, cl
                 />
             </Modal> */}
             <Modal
-                title="XÁC NHẬN KẾT THÚC CA LÀM VIỆC"
+                title={currentShift ? "XÁC NHẬN KẾT THÚC CA LÀM VIỆC" : "MỞ CA LÀM VIỆC"}
                 open={isShiftModalOpen}
                 onOk={handleConfirmShift}
                 onCancel={() => setIsShiftModalOpen(false)}

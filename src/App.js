@@ -148,9 +148,10 @@ const App = () => {
     return (
         <BrowserRouter>
             <Routes>
-                <Route path="/" element={<LoginPage setIsLoggedIn={setIsLoggedIn} setUser={setUser} employees={employees}/>} />
+                <Route path="/" element={<LoginPage setIsLoggedIn={setIsLoggedIn} setUser={setUser} employees={employees}
+                        currentShift={currentShift}/>} />
                 <Route path="/login" element={<LoginPage 
-                    setIsLoggedIn={setIsLoggedIn} setUser={setUser} employees={employees} />} />
+                    setIsLoggedIn={setIsLoggedIn} setUser={setUser} employees={employees} currentShift={currentShift} />} />
                 
                 {/* Các trang khác giữ nguyên logic kiểm tra isLoggedIn */}
                  {/* Tìm đến đoạn render trong App.js và sửa các Route như sau: */}
