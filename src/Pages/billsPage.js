@@ -5,6 +5,8 @@ import { Table, Card, Row, Col, Statistic, Typography, Dropdown,
  } from 'antd';
 import { DollarCircleOutlined, FileTextOutlined, MoreOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 
+import * as XLSX from 'xlsx'; // Thêm dòng này ở đầu file
+
 const { Title, Text } = Typography;
 
 const BillsPage = ({ billHistory, setBillHistory, currentShift, menuSeafood }) => {
@@ -170,6 +172,40 @@ const BillsPage = ({ billHistory, setBillHistory, currentShift, menuSeafood }) =
         setIsReportModalOpen(true);
     };
 
+    const exportToExcel = () => {
+        let dataForExcel = [];
+
+        if (reportData.type === 'month') {
+            // Cấu trúc dữ liệu cho báo cáo THÁNG
+            dataForExcel = reportData.dailyDetails.map(item => ({
+                "Ngày": item.date,
+                "Số lượng hóa đơn": item.dailyCount,
+                "Doanh thu (VNĐ)": item.dailyTotal
+            }));
+        } else {
+            // Cấu trúc dữ liệu cho báo cáo NGÀY
+            dataForExcel = reportData.details.map(bill => ({
+                "Mã Hóa Đơn": `#${bill.id.toString().slice(-6)}`,
+                "Bàn": bill.tableName,
+                "Thời gian": bill.time,
+                "Nhân viên": bill.staff,
+                "Tổng tiền (VNĐ)": bill.total
+            }));
+        }
+
+        // Tạo Worksheet từ dữ liệu
+        const worksheet = XLSX.utils.json_to_sheet(dataForExcel);
+        // Tạo Workbook
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "BaoCaoDoanhThu");
+        
+        // Xuất file với tên theo tiêu đề báo cáo
+        const fileName = `${reportData.title.replace(/\//g, '-')}.xlsx`;
+        XLSX.writeFile(workbook, fileName);
+        
+        message.success("Đã tải xuống file báo cáo Excel!");
+    };
+
     return (
         <div style={{ padding: '20px' }}>
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
@@ -188,7 +224,14 @@ const BillsPage = ({ billHistory, setBillHistory, currentShift, menuSeafood }) =
                 open={isReportModalOpen}
                 onCancel={() => setIsReportModalOpen(false)}
                 width={700}
-                footer={[<Button key="ok" type="primary" onClick={() => setIsReportModalOpen(false)}>Đóng</Button>]}
+                footer={[
+                    <Button key="ok" type="primary" onClick={() => setIsReportModalOpen(false)}>Đóng</Button>,
+                    <Button key="excel" type="primary" style={{ backgroundColor: '#1d6f42', borderColor: '#1d6f42' }} icon={<FileTextOutlined/>} 
+                        onClick={exportToExcel}
+                    >
+                        Xuất Excel
+                    </Button>
+                ]}
             >
                 {/* Thống kê tổng quát tháng */}
                 <Row gutter={16} style={{ marginBottom: 20 }}>
