@@ -159,7 +159,8 @@ const TablePage = ({ table, setTable, menuSeafood, user, setBillHistory, current
             return { 
                 ...t, 
                 status: newStatus, 
-                orderItems: cart 
+                orderItems: cart,
+                note: tableNote // 👉 Lưu ghi chú vào bàn
             };
         }
         return t;});
@@ -174,6 +175,7 @@ const TablePage = ({ table, setTable, menuSeafood, user, setBillHistory, current
 
             setOpen(false); // Đóng Drawer
     };
+
     // Hàm xử lý khi bấm nút + hoặc - trong giỏ hàng
 const handleUpdateQty = (foodId, delta) => {
     setCart(updateQuantityLogic(cart, foodId, delta));
@@ -244,7 +246,8 @@ const handleShowBill = () => {
         discount: discount,
         total: finalTotal,
         time: new Date().toLocaleString('vi-VN'),
-        staff: "Phan Xuân Nhẫn"
+        staff: "Phan Xuân Nhẫn",
+        note: tableNote, // 👉 Thêm dòng này để truyền sang hóa đơn
     };
     setBillData(data);
     setIsBillModalOpen(true);
@@ -254,6 +257,7 @@ const handleShowBill = () => {
 const handleTableClick = (item) => {
     setSelectedTable(item);
     setCart(item.orderItems || []);
+    setTableNote(item.note || ''); // 👉 Load ghi chú cũ của bàn (nếu có)
 
     // if (item.status === 'available') {
     //     setOpen(true); // Mở Drawer gọi món ngay
@@ -377,6 +381,15 @@ const showModal = (product = null) => {
         setIsModalTableOpen(false);
         setEditingTable(null); // Reset state
     };
+
+    const handleUpdateNote = (foodId, note) => {
+        const newCart = cart.map(item => 
+            item.id === foodId ? { ...item, note: note } : item
+        );
+        setCart(newCart);
+    };
+
+    const [tableNote, setTableNote] = useState(''); // Lưu ghi chú chung của bàn
 
     return (
         <div>
@@ -610,6 +623,12 @@ const showModal = (product = null) => {
                                     ))}
                                 </tbody>
                             </table>
+
+                            {billData.note && (
+                                <div style={{ marginTop: 10, padding: '8px', background: '#fffbe6', border: '1px solid #ffe58f', borderRadius: 4 }}>
+                                    <Text italic><b>Ghi chú:</b> {billData.note}</Text>
+                                </div>
+                            )}
 
                             {/* Nội dung hóa đơn cũ của bạn */}
                             <div style={{ borderTop: '1px dashed #000', marginTop: '10px', paddingTop: '10px' }}>
@@ -936,10 +955,12 @@ const showModal = (product = null) => {
                                         <List.Item.Meta
                                             title={<b>{item.name}</b>}
                                             description={
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                    <Button size="small" icon={<MinusOutlined />} onClick={() => handleUpdateQty(item.id, -1)} disabled={item.qty <= 1} />
-                                                    <b>{item.qty}</b>
-                                                    <Button size="small" icon={<PlusOutlined />} onClick={() => handleUpdateQty(item.id, 1)} />
+                                                <div>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                        <Button size="small" icon={<MinusOutlined />} onClick={() => handleUpdateQty(item.id, -1)} disabled={item.qty <= 1} />
+                                                        <b>{item.qty}</b>
+                                                        <Button size="small" icon={<PlusOutlined />} onClick={() => handleUpdateQty(item.id, 1)} />
+                                                    </div>
                                                 </div>
                                             }
                                         />
@@ -947,6 +968,16 @@ const showModal = (product = null) => {
                                     </List.Item>
                                 )}
                             />
+                        <div style={{ marginTop: '10px' }}>
+                            <Text strong>Ghi chú cho bếp/thu ngân:</Text>
+                            <Input.TextArea 
+                                rows={2} 
+                                placeholder="Ví dụ: Khách ăn ít cay, ngồi chờ bạn..." 
+                                value={tableNote}
+                                onChange={(e) => setTableNote(e.target.value)}
+                                style={{ marginTop: '5px' }}
+                            />
+                        </div>
                         <Title level={4}>Tổng: {calculateTotal(cart).toLocaleString()}đ</Title>
                             <div style={{ marginTop: '20px', padding: '15px', background: '#f5f5f5', borderRadius: '8px' }}>
                                 <Row gutter={16} align="middle">

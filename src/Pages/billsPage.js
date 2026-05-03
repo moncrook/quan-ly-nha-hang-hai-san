@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Table, Card, Row, Col, Statistic, Typography, Dropdown, 
     Space, Button, Modal, Form, InputNumber, Popconfirm, message, Input, Select,
-    Tag
+    Tag, Divider
  } from 'antd';
 import { DollarCircleOutlined, FileTextOutlined, MoreOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 
@@ -26,7 +26,8 @@ const BillsPage = ({ billHistory, setBillHistory, currentShift, menuSeafood }) =
         form.setFieldsValue({
             staff: record.staff,
             discount: record.discount || 0,
-            paymentMethod: record.paymentMethod || 'Tiền mặt' // Mặc định nếu cũ chưa có
+            paymentMethod: record.paymentMethod || 'Tiền mặt', // Mặc định nếu cũ chưa có
+            note: record.note || '',
         });
         setIsEditModalOpen(true);
     };
@@ -49,6 +50,7 @@ const BillsPage = ({ billHistory, setBillHistory, currentShift, menuSeafood }) =
                 ...bill, 
                 staff: values.staff, 
                 discount: values.discount, 
+                note: values.note,
                 orderItems: editingBill.orderItems, 
                 total: finalAmount // Lưu giá trị đã tính toán lại
               } 
@@ -98,6 +100,13 @@ const BillsPage = ({ billHistory, setBillHistory, currentShift, menuSeafood }) =
             dataIndex: 'total', 
             key: 'total', 
             render: (total) => <b style={{ color: '#52c41a' }}>{total.toLocaleString()}đ</b> 
+        },
+        { 
+            title: 'Ghi chú', 
+            dataIndex: 'note', 
+            key: 'note',
+            width: 150,
+            render: (text) => <Text type="secondary" italic style={{ fontSize: '12px' }}>{text || '-'}</Text>
         },
         {
             title: 'Thao tác',
@@ -206,6 +215,10 @@ const BillsPage = ({ billHistory, setBillHistory, currentShift, menuSeafood }) =
         message.success("Đã tải xuống file báo cáo Excel!");
     };
 
+        //State quản lý Modal Xem Chi Tiết
+    const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+    const [selectedBill, setSelectedBill] = useState(null);
+
     return (
         <div style={{ padding: '20px' }}>
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
@@ -301,7 +314,21 @@ const BillsPage = ({ billHistory, setBillHistory, currentShift, menuSeafood }) =
                 </Col>
             </Row>
 
-            <Table dataSource={billHistory} columns={columns} rowKey="id" pagination={{ pageSize: 10 }} />
+            <Table 
+                dataSource={billHistory} 
+                columns={columns} 
+                rowKey="id" 
+                pagination={{ pageSize: 10 }} 
+                onRow={(record) => ({
+                    onClick: (event) => {
+                        // Nếu click vào mấy cái nút Sửa/Xóa thì không mở Modal chi tiết
+                        if (event.target.closest('button')) return; 
+                        setSelectedBill(record);
+                        setIsDetailModalOpen(true);
+                    },
+                    style: { cursor: 'pointer' } // Hiện con trỏ bàn tay khi di chuột vào dòng
+                })}
+                />
 
             <Modal
                 title={`CHỈNH SỬA HÓA ĐƠN #${editingBill?.id}`}
@@ -325,6 +352,11 @@ const BillsPage = ({ billHistory, setBillHistory, currentShift, menuSeafood }) =
                         </Col>
                         <Col span={8}><Form.Item name="discount" label="Giảm giá (%)"><InputNumber min={0} max={100} style={{ width: '100%' }} /></Form.Item></Col>
                     </Row>
+
+                    {/* 👉 THÊM Ô SỬA GHI CHÚ TỔNG QUÁT Ở ĐÂY */}
+                    <Form.Item name="note" label="Ghi chú hóa đơn">
+                        <Input.TextArea rows={2} placeholder="Nhập ghi chú cập nhật..." />
+                    </Form.Item>
 
                     <div style={{ marginBottom: 15, padding: '10px', background: '#f0f5ff', borderRadius: 8 }}>
                         <Text strong>Thêm món mới vào bill: </Text>
@@ -385,6 +417,56 @@ const BillsPage = ({ billHistory, setBillHistory, currentShift, menuSeafood }) =
                         </Title>
                     </div>
                 </Form>
+            </Modal>
+            <Modal
+                title={<Title level={3}>CHI TIẾT HÓA ĐƠN #{selectedBill?.id.toString().slice(-6)}</Title>}
+                open={isDetailModalOpen}
+                onCancel={() => setIsDetailModalOpen(false)}
+                footer={[
+                    <Button key="close" onClick={() => setIsDetailModalOpen(false)}>Đóng</Button>,
+                    <Button key="print" type="primary" onClick={() => window.print()}>🖨️ In lại hóa đơn</Button>
+                ]}
+                width={600}
+            >
+                {selectedBill && (
+                    <div id="bill-detail-content">
+                        <Row gutter={[16, 8]}>
+                            <Col span={12}><Text strong>Bàn:</Text> {selectedBill.tableName}</Col>
+                            <Col span={12}><Text strong>Thời gian:</Text> {selectedBill.time}</Col>
+                            <Col span={12}><Text strong>Nhân viên:</Text> {selectedBill.staff}</Col>
+                            <Col span={12}>
+                                <Text strong>P.Thức:</Text> <Tag color="orange">{selectedBill.paymentMethod || 'Tiền mặt'}</Tag>
+                            </Col>
+                        </Row>
+
+                        <Divider style={{ margin: '15px 0' }} />
+
+                        <Table
+                            dataSource={selectedBill.orderItems}
+                            pagination={false}
+                            size="small"
+                            rowKey="id"
+                            columns={[
+                                { title: 'Món ăn', dataIndex: 'name', key: 'name' },
+                                { title: 'SL', dataIndex: 'qty', key: 'qty', align: 'center' },
+                                { title: 'Đơn giá', dataIndex: 'price', render: (v) => v.toLocaleString(), align: 'right' },
+                                { title: 'T.Tiền', render: (_, r) => (r.price * r.qty).toLocaleString(), align: 'right' },
+                            ]}
+                        />
+
+                        <div style={{ marginTop: 20, textAlign: 'right', borderTop: '1px dashed #ccc', paddingTop: 10 }}>
+                            <p>Tạm tính: <b>{selectedBill.subTotal?.toLocaleString() || (selectedBill.total / (1 - (selectedBill.discount || 0)/100)).toLocaleString()}đ</b></p>
+                            <p>Giảm giá: <Text type="danger">-{selectedBill.discount || 0}%</Text></p>
+                            <Title level={4}>TỔNG CỘNG: <span style={{ color: '#52c41a' }}>{selectedBill.total.toLocaleString()}đ</span></Title>
+                        </div>
+
+                        {selectedBill.note && (
+                            <div style={{ marginTop: 10, padding: 10, background: '#fffbe6', borderRadius: 5, border: '1px solid #ffe58f' }}>
+                                <Text italic><b>Ghi chú:</b> {selectedBill.note}</Text>
+                            </div>
+                        )}
+                    </div>
+                )}
             </Modal>
         </div>
     );
