@@ -4,7 +4,8 @@ import { Table, Card, Row, Col, Statistic, Typography, Dropdown,
     Tag, Divider, DatePicker
  } from 'antd';
 import { DollarCircleOutlined, FileTextOutlined, MoreOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
-
+import dayjs from 'dayjs';
+import locale from 'antd/es/date-picker/locale/vi_VN';
 import * as XLSX from 'xlsx'; // Thêm dòng này ở đầu file
 
 const { RangePicker } = DatePicker;
@@ -220,37 +221,34 @@ const BillsPage = ({ billHistory, setBillHistory, currentShift, menuSeafood }) =
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [selectedBill, setSelectedBill] = useState(null);
 
-    // State để đóng mở Modal chọn khoảng ngày
+    const [startDate, setStartDate] = useState(null);
+    const [endDate, setEndDate] = useState(null);
     const [isRangePickerModalOpen, setIsRangePickerModalOpen] = useState(false);
-    // State lưu khoảng ngày đang chọn trên giao diện Modal
-    const [tempDateRange, setTempCashRange] = useState(null);
 
     const generateCustomReport = (dates) => {
-        if (!dates) return;
-
         const [start, end] = dates;
-        const startDate = start.startOf('day').toDate();
-        const endDate = end.endOf('day').toDate();
+        const startDateObj = start.startOf('day').toDate();
+        const endDateObj = end.endOf('day').toDate();
 
         const filteredBills = billHistory.filter(bill => {
-            // Xử lý chuỗi "10:51:45 3/5/2026"
-            const timePart = bill.time.split(' ')[1]; // Lấy "3/5/2026"
-            const [d, m, y] = timePart.split('/').map(Number);
+            // Tách chuỗi ngày của Nhạn (ví dụ: "3/5/2026")
+            const dateStr = bill.time.split(' ')[1]; 
+            const [d, m, y] = dateStr.split('/').map(Number);
             const billDate = new Date(y, m - 1, d);
             
-            return billDate >= startDate && billDate <= endDate;
+            return billDate >= startDateObj && billDate <= endDateObj;
         });
 
         const total = filteredBills.reduce((sum, b) => sum + b.total, 0);
 
         setReportData({
-            title: `BÁO CÁO TỪ ${start.format('DD/MM/YYYY')} ĐẾN ${end.format('DD/MM/YYYY')}`,
+            title: `BÁO CÁO DOANH THU (${start.format('DD/MM/YYYY')} - ${end.format('DD/MM/YYYY')})`,
             total: total,
             count: filteredBills.length,
             details: filteredBills,
-            type: 'custom' // Để Table trong Modal biết hiện theo danh sách HĐ
+            type: 'custom'
         });
-        setIsReportModalOpen(true); // Mở modal kết quả báo cáo
+        setIsReportModalOpen(true);
     };
 
     return (
@@ -336,27 +334,54 @@ const BillsPage = ({ billHistory, setBillHistory, currentShift, menuSeafood }) =
             
             {/* 1. Modal bước đệm để chọn ngày */}
             <Modal
-                title="CHỌN KHOẢNG THỜI GIAN XEM BÁO CÁO"
+                title={<Title level={4} style={{ margin: 0 }}>📅 CHỌN KHOẢNG THỜI GIAN BÁO CÁO</Title>}
                 open={isRangePickerModalOpen}
-                onCancel={() => setIsRangePickerModalOpen(false)}
+                onCancel={() => {
+                    setIsRangePickerModalOpen(false);
+                    setStartDate(null); // Reset khi hủy
+                    setEndDate(null);
+                }}
                 onOk={() => {
-                    if (!tempDateRange) {
-                        message.warning("Vui lòng chọn ngày!");
+                    if (!startDate || !endDate) {
+                        message.warning("Nhạn ơi, vui lòng chọn đủ cả ngày bắt đầu và ngày kết thúc nhé!");
                         return;
                     }
-                    generateCustomReport(tempDateRange); // Gọi hàm lọc dữ liệu đã có của Nhạn
-                    setIsRangePickerModalOpen(false);    // Đóng modal chọn ngày
+                    // Gọi hàm tạo báo cáo với mảng [startDate, endDate] để tương thích với logic cũ
+                    generateCustomReport([startDate, endDate]);
+                    setIsRangePickerModalOpen(false);
                 }}
                 okText="Xem báo cáo"
                 cancelText="Hủy"
+                width={400}
             >
-                <div style={{ padding: '20px 0' }}>
-                    <Text strong>Chọn từ ngày - đến ngày:</Text>
-                    <RangePicker 
-                        style={{ width: '100%', marginTop: '10px' }}
-                        format="DD/MM/YYYY"
-                        onChange={(values) => setTempCashRange(values)}
-                    />
+                <div style={{ padding: '10px 0' }}>
+                    <Space direction="vertical" style={{ width: '100%' }} size="large">
+                        <div>
+                            <Text strong>Từ ngày:</Text>
+                            <DatePicker 
+                                locale={locale}
+                                format="DD/MM/YYYY"
+                                placeholder="Chọn ngày bắt đầu"
+                                style={{ width: '100%', marginTop: '5px' }}
+                                onChange={(date) => setStartDate(date)}
+                            />
+                        </div>
+
+                        <div>
+                            <Text strong>Đến ngày:</Text>
+                            <DatePicker 
+                                locale={locale}
+                                format="DD/MM/YYYY"
+                                placeholder="Chọn ngày kết thúc"
+                                style={{ width: '100%', marginTop: '5px' }}
+                                onChange={(date) => setEndDate(date)}
+                                // Logic: Không cho chọn ngày kết thúc bé hơn ngày bắt đầu
+                                disabledDate={(current) => {
+                                    return startDate ? current && current < startDate.startOf('day') : false;
+                                }}
+                            />
+                        </div>
+                    </Space>
                 </div>
             </Modal>
 

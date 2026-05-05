@@ -951,8 +951,7 @@ const showModal = (product = null) => {
                                         actions={[
                                             <Popconfirm title="Xóa món này?" onConfirm={() =>  handleRemoveItem(item.id)}>
                                                 <Button danger icon={<DeleteOutlined />}></Button>
-                                            </Popconfirm>,
-                                            // <Button danger type="text" icon={<DeleteOutlined />} onClick={() => handleRemoveItem(item.id)} />
+                                            </Popconfirm>
                                         ]}
                                     >
                                         <List.Item.Meta
