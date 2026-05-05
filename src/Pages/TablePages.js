@@ -949,7 +949,10 @@ const showModal = (product = null) => {
                                 renderItem={(item) => (
                                     <List.Item
                                         actions={[
-                                            <Button danger type="text" icon={<DeleteOutlined />} onClick={() => handleRemoveItem(item.id)} />
+                                            <Popconfirm title="Xóa món này?" onConfirm={() =>  handleRemoveItem(item.id)}>
+                                                <Button danger icon={<DeleteOutlined />}></Button>
+                                            </Popconfirm>,
+                                            // <Button danger type="text" icon={<DeleteOutlined />} onClick={() => handleRemoveItem(item.id)} />
                                         ]}
                                     >
                                         <List.Item.Meta

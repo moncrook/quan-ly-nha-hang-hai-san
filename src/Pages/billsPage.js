@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { Table, Card, Row, Col, Statistic, Typography, Dropdown, 
     Space, Button, Modal, Form, InputNumber, Popconfirm, message, Input, Select,
-    Tag, Divider
+    Tag, Divider, DatePicker
  } from 'antd';
 import { DollarCircleOutlined, FileTextOutlined, MoreOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 
 import * as XLSX from 'xlsx'; // Thêm dòng này ở đầu file
 
+const { RangePicker } = DatePicker;
 const { Title, Text } = Typography;
 
 const BillsPage = ({ billHistory, setBillHistory, currentShift, menuSeafood }) => {
@@ -219,6 +220,39 @@ const BillsPage = ({ billHistory, setBillHistory, currentShift, menuSeafood }) =
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [selectedBill, setSelectedBill] = useState(null);
 
+    // State để đóng mở Modal chọn khoảng ngày
+    const [isRangePickerModalOpen, setIsRangePickerModalOpen] = useState(false);
+    // State lưu khoảng ngày đang chọn trên giao diện Modal
+    const [tempDateRange, setTempCashRange] = useState(null);
+
+    const generateCustomReport = (dates) => {
+        if (!dates) return;
+
+        const [start, end] = dates;
+        const startDate = start.startOf('day').toDate();
+        const endDate = end.endOf('day').toDate();
+
+        const filteredBills = billHistory.filter(bill => {
+            // Xử lý chuỗi "10:51:45 3/5/2026"
+            const timePart = bill.time.split(' ')[1]; // Lấy "3/5/2026"
+            const [d, m, y] = timePart.split('/').map(Number);
+            const billDate = new Date(y, m - 1, d);
+            
+            return billDate >= startDate && billDate <= endDate;
+        });
+
+        const total = filteredBills.reduce((sum, b) => sum + b.total, 0);
+
+        setReportData({
+            title: `BÁO CÁO TỪ ${start.format('DD/MM/YYYY')} ĐẾN ${end.format('DD/MM/YYYY')}`,
+            total: total,
+            count: filteredBills.length,
+            details: filteredBills,
+            type: 'custom' // Để Table trong Modal biết hiện theo danh sách HĐ
+        });
+        setIsReportModalOpen(true); // Mở modal kết quả báo cáo
+    };
+
     return (
         <div style={{ padding: '20px' }}>
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
@@ -226,7 +260,8 @@ const BillsPage = ({ billHistory, setBillHistory, currentShift, menuSeafood }) =
                     menu={{ 
                         items: [
                             {key:'1', label:'Báo cáo ngày', onClick: () => generateReport('day') }, 
-                            {key:'2', label:'Báo cáo tháng', onClick: () => generateReport('month')}
+                            {key:'2', label:'Báo cáo tháng', onClick: () => generateReport('month')},
+                            { key: '3', label: 'Báo cáo tùy chỉnh (Chọn ngày)', onClick: () => setIsRangePickerModalOpen(true) }
                         ] }} trigger={['click']}
                 >
                     <MoreOutlined style={{ transform: 'rotate(90deg)', fontSize: 18, cursor: 'pointer' }} />
@@ -239,6 +274,9 @@ const BillsPage = ({ billHistory, setBillHistory, currentShift, menuSeafood }) =
                 width={700}
                 footer={[
                     <Button key="ok" type="primary" onClick={() => setIsReportModalOpen(false)}>Đóng</Button>,
+                    <Button key="print" type="dashed" onClick={() => window.print()}>
+                        🖨️ In báo cáo
+                    </Button>,
                     <Button key="excel" type="primary" style={{ backgroundColor: '#1d6f42', borderColor: '#1d6f42' }} icon={<FileTextOutlined/>} 
                         onClick={exportToExcel}
                     >
@@ -296,6 +334,32 @@ const BillsPage = ({ billHistory, setBillHistory, currentShift, menuSeafood }) =
                 />
             </Modal>
             
+            {/* 1. Modal bước đệm để chọn ngày */}
+            <Modal
+                title="CHỌN KHOẢNG THỜI GIAN XEM BÁO CÁO"
+                open={isRangePickerModalOpen}
+                onCancel={() => setIsRangePickerModalOpen(false)}
+                onOk={() => {
+                    if (!tempDateRange) {
+                        message.warning("Vui lòng chọn ngày!");
+                        return;
+                    }
+                    generateCustomReport(tempDateRange); // Gọi hàm lọc dữ liệu đã có của Nhạn
+                    setIsRangePickerModalOpen(false);    // Đóng modal chọn ngày
+                }}
+                okText="Xem báo cáo"
+                cancelText="Hủy"
+            >
+                <div style={{ padding: '20px 0' }}>
+                    <Text strong>Chọn từ ngày - đến ngày:</Text>
+                    <RangePicker 
+                        style={{ width: '100%', marginTop: '10px' }}
+                        format="DD/MM/YYYY"
+                        onChange={(values) => setTempCashRange(values)}
+                    />
+                </div>
+            </Modal>
+
             <Title level={2}>🧾 QUẢN LÝ HÓA ĐƠN</Title>
 
             <Row gutter={16} style={{ marginBottom: '20px' }}>

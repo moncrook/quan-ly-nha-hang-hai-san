@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Card, Form, Input, Button, Typography, message, Layout, Table
-    ,Modal, Select,
+    ,Modal, Select,Popconfirm,
     Space
  } from 'antd';
 
@@ -53,7 +53,19 @@ const EmployeePage = ({ employees, setEmployees }) => {
                         render: (_, record) =>(
                             <Space>
                                 <Button icon={<EditOutlined />} onClick={() => showModal(record)}>Sửa</Button>
-                                <Button danger icon={<DeleteOutlined />} onClick={() => setEmployees(employees.filter(e => e.id !== record.id))}>Xóa</Button>
+                                <Popconfirm
+                                    title="Xác nhận xóa nhân viên"
+                                    description={`Bạn có chắc chắn muốn xóa nhân viên ${record.name} không?`}
+                                    onConfirm={() => {
+                                        setEmployees(employees.filter(e => e.id !== record.id));
+                                        message.success("Đã xóa nhân viên thành công!");
+                                    }}
+                                    okText="Xóa ngay"
+                                    cancelText="Hủy"
+                                    okButtonProps={{ danger: true }} // Làm nút Xác nhận có màu đỏ
+                                >
+                                    <Button danger icon={<DeleteOutlined />}>Xóa</Button>
+                                </Popconfirm>
                             </Space>
                         )
                     }
