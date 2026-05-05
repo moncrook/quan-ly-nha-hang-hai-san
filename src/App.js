@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Result, message   } from 'antd';
 import { BrowserRouter, Routes, Route, Navigate} from 'react-router-dom';
 import MainLayout from './component/MainLayout'; // Import cái khung vừa tạo
@@ -28,7 +28,6 @@ const initialEmployees = [
 ];
 
 const App = () => {
-
     const [table, setTable] = useState([
             { id: 1, name: 'Bàn số 1', status: 'available', capacity: 4, orderItems: [] },
             { id: 2, name: 'Bàn số 2', status: 'available', capacity: 4, orderItems: [] },
@@ -43,13 +42,99 @@ const App = () => {
             // ... (copy nốt các bàn khác của bạn vào đây)
         ]);
 
+        const initialBillHistory = [
+        {
+            id: 1714875000001,
+            tableName: "Bàn số 1",
+            time: "10:51:45 1/5/2026",
+            staff: "Phan Xuân Nhạn",
+            discount: 10,
+            paymentMethod: "Tiền mặt",
+            note: "Khách quen, giảm giá thêm",
+            orderItems: [
+                { id: 1, name: "Tôm hùm bỏ lò", price: 1200000, qty: 1 },
+                { id: 2, name: "Vang trắng", price: 800000, qty: 1 }
+            ],
+            total: 1800000
+        },
+        {
+            id: 17148750001,
+            tableName: "Bàn số 1",
+            time: "10:51:45 1/6/2026",
+            staff: "Phan Xuân Nhạn",
+            discount: 10,
+            paymentMethod: "Tiền mặt",
+            note: "Khách quen, giảm giá thêm",
+            orderItems: [
+                { id: 1, name: "Tôm hùm bỏ lò", price: 1200000, qty: 1 },
+                { id: 2, name: "Vang trắng", price: 800000, qty: 1 }
+            ],
+            total: 1800000
+        },
+        {
+            id: 1714875000002,
+            tableName: "Bàn số 5",
+            time: "12:30:00 2/5/2026",
+            staff: "Nguyễn Văn A",
+            discount: 0,
+            paymentMethod: "Chuyển khoản",
+            note: "",
+            orderItems: [
+                { id: 3, name: "Cua Cà Mau", price: 450000, qty: 2 },
+                { id: 4, name: "Bia Huda", price: 20000, qty: 10 }
+            ],
+            total: 1100000
+        },
+        {
+            id: 1714875000003,
+            tableName: "Bàn số 3",
+            time: "18:15:20 3/5/2026",
+            staff: "Trần Thị B",
+            discount: 5,
+            paymentMethod: "Thẻ",
+            note: "Ít cay",
+            orderItems: [
+                { id: 5, name: "Lẩu hải sản", price: 500000, qty: 1 },
+                { id: 6, name: "Ốc hương xào bơ", price: 250000, qty: 2 }
+            ],
+            total: 950000
+        },
+        {
+            id: 1714875000004,
+            tableName: "Bàn số 2",
+            time: "19:00:00 4/5/2026",
+            staff: "Phan Xuân Nhạn",
+            discount: 0,
+            paymentMethod: "Tiền mặt",
+            note: "Khách đi 4 người",
+            orderItems: [
+                { id: 7, name: "Gỏi sứa", price: 150000, qty: 2 },
+                { id: 8, name: "Mực lá nướng", price: 300000, qty: 1 }
+            ],
+            total: 600000
+        },
+        {
+            id: 1714875000005,
+            tableName: "Bàn số 8",
+            time: "20:45:10 5/5/2026",
+            staff: "Nguyễn Văn A",
+            discount: 0,
+            paymentMethod: "Chuyển khoản",
+            note: "Giao hàng nhanh",
+            orderItems: [
+                { id: 1, name: "Tôm hùm bỏ lò", price: 1200000, qty: 2 }
+            ],
+            total: 2400000
+        }
+    ];
+
         // App.js
     const [currentShift, setCurrentShift] = useState(null); // null = chưa mở ca
 
     // Thêm một mảng để lưu lịch sử các ca đã đóng (phục vụ báo cáo)
     const [shiftHistory, setShiftHistory] = useState([]);
 
-        const [billHistory, setBillHistory] = useState([]);
+        const [billHistory, setBillHistory] = useState(initialBillHistory);
         const [isLoggedIn, setIsLoggedIn] = useState(false);
         const [menuData, setMenuData] = useState(menuSeafood);
 
@@ -139,11 +224,9 @@ const App = () => {
             window.location.href = "/table";
             };
             
-            // setShiftHistory([...shiftHistory, finalShiftData]);
-            // setCurrentShift(null); // Reset ca về null
-            // setIsLoggedIn(false);  // Đuổi tất cả ra trang Login
-            // setUser(null);
-            // message.warning("Đã đóng ca. Hệ thống tạm dừng phục vụ nhân viên!");
+            React.useEffect(() => {
+            localStorage.setItem('nhan_seafood_bills', JSON.stringify(billHistory));
+        }, [billHistory]);
 
     return (
         <BrowserRouter>

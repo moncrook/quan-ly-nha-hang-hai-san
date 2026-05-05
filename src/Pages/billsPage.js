@@ -12,6 +12,7 @@ const { RangePicker } = DatePicker;
 const { Title, Text } = Typography;
 
 const BillsPage = ({ billHistory, setBillHistory, currentShift, menuSeafood }) => {
+
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingBill, setEditingBill] = useState(null);
     const [form] = Form.useForm();
@@ -226,27 +227,55 @@ const BillsPage = ({ billHistory, setBillHistory, currentShift, menuSeafood }) =
     const [isRangePickerModalOpen, setIsRangePickerModalOpen] = useState(false);
 
     const generateCustomReport = (dates) => {
+        if (!dates || !dates[0] || !dates[1]) return;
         const [start, end] = dates;
-        const startDateObj = start.startOf('day').toDate();
-        const endDateObj = end.endOf('day').toDate();
-
+        
+        // 1. Lọc hóa đơn trong khoảng ngày
         const filteredBills = billHistory.filter(bill => {
-            // Tách chuỗi ngày của Nhạn (ví dụ: "3/5/2026")
             const dateStr = bill.time.split(' ')[1]; 
             const [d, m, y] = dateStr.split('/').map(Number);
-            const billDate = new Date(y, m - 1, d);
-            
-            return billDate >= startDateObj && billDate <= endDateObj;
+            const billDate = dayjs(new Date(y, m - 1, d));
+            return (billDate.isAfter(start, 'day') || billDate.isSame(start, 'day')) && 
+                (billDate.isBefore(end, 'day') || billDate.isSame(end, 'day'));
         });
 
-        const total = filteredBills.reduce((sum, b) => sum + b.total, 0);
+        // 2. Gom nhóm theo ngày (Để hiển thị giống báo cáo tháng)
+        const dailyMap = {};
+        let totalRevenue = 0;
+        let totalDiscount = 0;
 
+        filteredBills.forEach(bill => {
+            const dateKey = bill.time.split(' ')[1]; // Lấy chuỗi "DD/MM/YYYY"
+            totalRevenue += bill.total;
+            totalDiscount += (bill.total / (1 - (bill.discount || 0) / 100)) * ((bill.discount || 0) / 100);
+
+            if (!dailyMap[dateKey]) {
+                dailyMap[dateKey] = {
+                    date: dateKey,
+                    dailyTotal: 0,
+                    dailyCount: 0,
+                    bills: [] // Lưu lại để nếu muốn xem chi tiết khi click vào dòng
+                };
+            }
+            dailyMap[dateKey].dailyTotal += bill.total;
+            dailyMap[dateKey].dailyCount += 1;
+            dailyMap[dateKey].bills.push(bill);
+        });
+
+        // Chuyển object thành mảng và sắp xếp theo ngày
+        const dailyDetails = Object.values(dailyMap).sort((a, b) => {
+            return dayjs(a.date, 'DD/MM/YYYY').unix() - dayjs(b.date, 'DD/MM/YYYY').unix();
+        });
+
+        // 3. Set dữ liệu vào state
         setReportData({
-            title: `BÁO CÁO DOANH THU (${start.format('DD/MM/YYYY')} - ${end.format('DD/MM/YYYY')})`,
-            total: total,
+            title: `BÁO CÁO DOANH THU TÙY CHỌN`,
+            subtitle: `Từ ${start.format('DD/MM/YYYY')} đến ${end.format('DD/MM/YYYY')}`,
+            total: totalRevenue,
+            discount: totalDiscount,
             count: filteredBills.length,
-            details: filteredBills,
-            type: 'custom'
+            dailyDetails: dailyDetails, // Dữ liệu đã gom nhóm
+            type: 'custom_grouped' // Đánh dấu loại báo cáo mới
         });
         setIsReportModalOpen(true);
     };
@@ -282,52 +311,77 @@ const BillsPage = ({ billHistory, setBillHistory, currentShift, menuSeafood }) =
                     </Button>
                 ]}
             >
-                {/* Thống kê tổng quát tháng */}
+                {/* 1. Khu vực Thống kê con số */}
                 <Row gutter={16} style={{ marginBottom: 20 }}>
-                    <Col span={12}>
-                        <Card size="small" style={{ background: '#f6ffed', borderLeft: '5px solid #52c41a' }}>
-                            <Statistic title="TỔNG DOANH THU THÁNG" value={reportData.total} suffix="đ" valueStyle={{ color: '#3f8600', fontWeight: 'bold' }} />
-                        </Card>
+                    <Col span={8}>
+                        <Statistic title="TỔNG DOANH THU" value={reportData.total} suffix="đ" valueStyle={{ color: '#3f8600', fontWeight: 'bold' }} />
                     </Col>
-                    <Col span={12}>
-                        <Card size="small" style={{ background: '#e6f7ff', borderLeft: '5px solid #1890ff' }}>
-                            <Statistic title="TỔNG HÓA ĐƠN" value={reportData.count} suffix="HĐ" />
-                        </Card>
+                    <Col span={8}>
+                        <Statistic title="SỐ HÓA ĐƠN" value={reportData.count} suffix="HĐ" />
                     </Col>
                 </Row>
 
-                <Text strong style={{ fontSize: '16px' }}>
-                    {reportData.type === 'month' ? "📅 Chi tiết doanh thu từng ngày:" : "📄 Danh sách hóa đơn trong ngày:"}
-                </Text>
+                <Divider />
 
+                {/* 2. Bảng danh sách chi tiết */}
+                <Text strong style={{ fontSize: '16px' }}>📄 Chi tiết các giao dịch:</Text>
                 <Table
                     style={{ marginTop: 10 }}
-                    dataSource={reportData.type === 'month' ? reportData.dailyDetails : reportData.details}
-                    rowKey={(record) => record.date || record.id}
+                    // CHỌN NGUỒN DỮ LIỆU: Nếu là báo cáo ngày thì hiện details, còn lại hiện dailyDetails
+                    dataSource={reportData.type === 'day' ? reportData.details : reportData.dailyDetails}
+                    rowKey={(record) => record.id || record.date}
                     pagination={{ pageSize: 7 }}
                     columns={
-                        reportData.type === 'month' 
+                        // ĐIỀU KIỆN CHỌN CỘT HIỂN THỊ
+                        (reportData.type === 'month' || reportData.type === 'custom_grouped') 
                         ? [
+                            // Cột dành cho báo cáo THÁNG hoặc TÙY CHỌN (Gom nhóm theo ngày)
                             { title: 'Ngày', dataIndex: 'date', key: 'date' },
-                            { title: 'Số hóa đơn', dataIndex: 'dailyCount', key: 'dailyCount', align: 'center', render: (c) => <Tag color="blue">{c} HĐ</Tag> },
-                            { title: 'Doanh thu ngày', dataIndex: 'dailyTotal', key: 'dailyTotal', align: 'right', render: (v) => <b>{v.toLocaleString()}đ</b> },
+                            { 
+                                title: 'Số hóa đơn', 
+                                dataIndex: 'dailyCount', 
+                                align: 'center', 
+                                render: (c) => <Tag color="blue">{c} HĐ</Tag> 
+                            },
+                            { 
+                                title: 'Doanh thu ngày', 
+                                dataIndex: 'dailyTotal', 
+                                align: 'right', 
+                                render: (v) => <b style={{color: '#1890ff'}}>{v.toLocaleString()}đ</b> 
+                            },
                         ]
                         : [
-                            { title: 'Mã HĐ', dataIndex: 'id', render: (id) => `#${id.toString().slice(-6)}` },
+                            // Cột dành cho báo cáo NGÀY (Hiện từng hóa đơn chi tiết)
+                            { title: 'Mã HĐ', dataIndex: 'id', render: (id) => id ? `#${id.toString().slice(-6)}` : 'N/A' },
                             { title: 'Bàn', dataIndex: 'tableName' },
-                            { title: 'Tổng tiền', dataIndex: 'total', render: (v) => <b>{v.toLocaleString()}đ</b> },
+                            { title: 'Thời gian', dataIndex: 'time' },
+                            { 
+                                title: 'Tổng tiền', 
+                                dataIndex: 'total', 
+                                align: 'right', 
+                                render: (v) => <b>{v.toLocaleString()}đ</b> 
+                            },
                         ]
                     }
                     summary={(pageData) => {
-                        if (reportData.type === 'month') {
-                            return (
-                                <Table.Summary.Row style={{ background: '#fafafa' }}>
-                                    <Table.Summary.Cell index={0}><b>TỔNG CỘNG</b></Table.Summary.Cell>
-                                    <Table.Summary.Cell index={1} align="center"><b>{reportData.count} HĐ</b></Table.Summary.Cell>
-                                    <Table.Summary.Cell index={2} align="right"><b style={{ color: 'red' }}>{reportData.total.toLocaleString()}đ</b></Table.Summary.Cell>
-                                </Table.Summary.Row>
-                            );
-                        }
+                        // Dòng tổng cộng ở cuối bảng cho đẹp
+                        let totalVal = 0;
+                        let countVal = 0;
+                        
+                        pageData.forEach((record) => {
+                            totalVal += record.total || record.dailyTotal || 0;
+                            countVal += record.dailyCount || 1;
+                        });
+
+                        return (
+                            <Table.Summary.Row style={{ background: '#fafafa' }}>
+                                <Table.Summary.Cell index={0}><b>TỔNG CỘNG</b></Table.Summary.Cell>
+                                <Table.Summary.Cell index={1} align="center"><b>{countVal} HĐ</b></Table.Summary.Cell>
+                                <Table.Summary.Cell index={2} align="right">
+                                    <b style={{ color: 'red', fontSize: '16px' }}>{totalVal.toLocaleString()}đ</b>
+                                </Table.Summary.Cell>
+                            </Table.Summary.Row>
+                        );
                     }}
                 />
             </Modal>
