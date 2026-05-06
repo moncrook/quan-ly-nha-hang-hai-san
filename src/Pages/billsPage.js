@@ -280,6 +280,21 @@ const BillsPage = ({ billHistory, setBillHistory, currentShift, menuSeafood }) =
         setIsReportModalOpen(true);
     };
 
+    // 1. Lấy ngày hôm nay theo định dạng dữ liệu của Nhạn (ví dụ: "6/5/2026")
+    const todayStr = dayjs().format('D/M/YYYY');
+
+    // 2. Lọc danh sách hóa đơn CHỈ HIỆN NGÀY HÔM NAY trên bảng chính
+    const displayBills = billHistory.filter(bill => {
+        // Tách lấy phần ngày từ chuỗi "HH:mm:ss DD/MM/YYYY"
+        const billDate = bill.time.split(' ')[1]; 
+        return billDate === todayStr;
+    });
+
+    // 3. Tính toán các con số thống kê trên Card cũng chỉ dựa trên ngày hôm nay
+    const totalBillsAmountToday = displayBills.reduce((sum, bill) => sum + bill.total, 0);
+    // const openingAmount = currentShift ? currentShift.openingBalance : 0;
+    const totalRevenueToday = totalBillsAmountToday + openingAmount;
+
     return (
         <div style={{ padding: '20px' }}>
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
@@ -444,21 +459,28 @@ const BillsPage = ({ billHistory, setBillHistory, currentShift, menuSeafood }) =
             <Row gutter={16} style={{ marginBottom: '20px' }}>
                 <Col span={12}>
                     <Card bordered={false} style={{ background: '#f6ffed' }}>
-                        <Statistic title="Tổng doanh thu" value={totalRevenue} precision={0} valueStyle={{ color: '#3f8600' }} prefix={<DollarCircleOutlined />} suffix="VNĐ" />
+                        <Statistic 
+                            title="Doanh thu hôm nay" 
+                            value={totalRevenueToday} 
+                            precision={0} 
+                            valueStyle={{ color: '#3f8600' }} 
+                            prefix={<DollarCircleOutlined />} 
+                            suffix="VNĐ" 
+                        />
                         <p style={{ fontSize: '12px', color: '#888' }}>
-                            (HĐ: {totalBillsAmount.toLocaleString()} + Mở ca: {openingAmount.toLocaleString()})
+                            (HĐ: {totalBillsAmountToday.toLocaleString()} + Mở ca: {openingAmount.toLocaleString()})
                         </p>
                     </Card>
                 </Col>
                 <Col span={12}>
                     <Card bordered={false} style={{ background: '#e6f7ff' }}>
-                        <Statistic title="Tổng số hóa đơn" value={billHistory.length} prefix={<FileTextOutlined />} />
+                        <Statistic title="Hóa đơn hôm nay" value={displayBills.length} prefix={<FileTextOutlined />} />
                     </Card>
                 </Col>
             </Row>
 
             <Table 
-                dataSource={billHistory} 
+                dataSource={displayBills} 
                 columns={columns} 
                 rowKey="id" 
                 pagination={{ pageSize: 10 }} 

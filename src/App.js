@@ -225,8 +225,8 @@ const App = () => {
             };
             
             React.useEffect(() => {
-            localStorage.setItem('nhan_seafood_bills', JSON.stringify(billHistory));
-        }, [billHistory]);
+                localStorage.setItem('nhan_seafood_bills', JSON.stringify(billHistory));
+            }, [billHistory]);
 
     return (
         <BrowserRouter>
