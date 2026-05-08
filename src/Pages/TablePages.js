@@ -5,7 +5,7 @@ import { Row, InputNumber,
      Popconfirm, Typography, Modal, Menu,Dropdown, Form, Select, Alert  } from 'antd';
 
 import { PlusOutlined, MinusOutlined, DeleteOutlined, MoneyCollectOutlined, QrcodeOutlined,
-     MoreOutlined, EditOutlined } from '@ant-design/icons';
+     MoreOutlined, EditOutlined, PictureOutlined } from '@ant-design/icons';
      
 import { menuSeafood, addToCartLogic, calculateTotal, updateQuantityLogic,
      handleBookingLogic, HuyDatBanLogic, handleAddTable, handleEditTable} from '../Untils/handleTable';
@@ -511,10 +511,16 @@ const showModal = (product = null) => {
                     />
                 </Modal>
             </div>
-            <Row gutter={[16, 16]}>
+            <Row gutter={[12, 12]}>
                 {table.map(item => (
-                    <Col span={6} key={item.id}>
+                    <Col
+                        xs={12}    // Điện thoại (2 bàn 1 hàng)
+                        sm={8}     // Tablet nhỏ (3 bàn 1 hàng)
+                        md={6}     // Laptop (4 bàn 1 hàng)
+                        lg={4}     // Màn hình lớn (6 bàn 1 hàng)
+                        span={6} key={item.id} style={{ marginBottom: '16px' }}>
                         <Card hoverable 
+                            size='small'
                             onClick={() => {
                                 if (item.status === 'occupied') {
                                     setSelectedTable(item); // Cập nhật bàn trước
@@ -529,22 +535,22 @@ const showModal = (product = null) => {
                                     ? '6px solid #52c41a'
                                     : item.status === 'reserved'
                                     ? '6px solid #faad14'
-                                    : '6px solid #ff4d4f'
+                                    : '6px solid #ff4d4f',
+                                    overflow: 'hidden',
                                 }}
                              >
-                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <b>{item.name}</b>
+                            <div style={{ display: 'flex', justifyContent: 'space-between',alignItems: 'center',fontSize: 'clamp(10px, 3vw, 14px)', 
+                                textAlign: 'center',
+                                flexWrap: 'wrap',
+                                justifyContent: 'center',
+                                gap: '6px'
+                            }}>
+                                <b >{item.name}</b>
                                 <Tag color='yellow' >sức chứa: {item.capacity}</Tag>
                                 <Tag color={item.status === 'available' ? 'green' : item.status === 'occupied' ? 'red' : 'red'}>
                                     {item.status === 'available' ? 'Trống' : item.status === 'occupied' ? 'Có khách' : 'Bàn đã đặt'}
                                 </Tag>
                             </div>
-                            {/* {item.status === 'occupied' && (
-                                <Button danger size="small" style={{marginTop: 10}} >
-                                    Thanh toán nhanh
-                                </Button>
-                                
-                            )} */}
                         </Card>
                     </Col>
                 ))}
@@ -866,23 +872,7 @@ const showModal = (product = null) => {
                     </Form>
                 </Modal>
             <Drawer title={`Order - ${selectedTable?.name}`} width="100%" onClose={() => setOpen(false)} open={open}>
-                {/* <Sider trigger={null} collapsible collapsed={collapsed} theme="dark">
-                    <Menu 
-                        mode='inline'
-                        items={[
-                            {key: '1', label: <Button>Chuyển bàn</Button>},
-                            {key: '2', label: <Button>Gộp bàn</Button>}
-                        ]}
-                    />
-                </Sider>
-                <Button
-                        type="text"
-                        icon= {<MoreOutlined/>}
-                        onClick={() => setCollapsed(!collapsed)}
-                        style={{ fontSize: '18px', width: 64, height: 64 }} */}
-                    {/* /> */}
                 <Row gutter={24}>
-                    
                     <Col span={4}>
                         <Card title="Danh mục" size="small" bodyStyle={{ padding: 0 }}>
                             <Menu
@@ -915,14 +905,25 @@ const showModal = (product = null) => {
                                 return matchCategory && matchSearch;
                             })
                             .map(food => (
-                                <Col span={12} key={food.id}>
+                                <Col span={8} key={food.id}>
                                     <Card size="small"
                                         hoverable
-                                        cover={<div style={{height: '100px', background: '#e6f7ff', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>🖼️</div>}
-                                    
+                                        cover={
+                                            <div style={{ height: '120px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f0f2f5' }}>
+                                                {food.image ? (
+                                                    <img 
+                                                        alt={food.name} 
+                                                        src={food.image} 
+                                                        style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
+                                                    />
+                                                ) : (
+                                                    <PictureOutlined style={{ fontSize: '24px', color: '#bfbfbf' }} />
+                                                )}
+                                            </div>
+                                        }
                                     >
                                         <b>{food.name}</b> - {food.price.toLocaleString()}đ
-                                        <Button type="primary" icon={<PlusOutlined />} onClick={() => setCart(addToCartLogic(cart, food))} />
+                                        <Button style={{marginLeft: "10px"}} type="primary" icon={<PlusOutlined />} onClick={() => setCart(addToCartLogic(cart, food))} />
                                     </Card>
                                 </Col>
                             ))}

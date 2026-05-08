@@ -1,10 +1,12 @@
 // Dữ liệu thực đơn mẫu
 export const menuSeafood = [
-    { id: 101, name: 'Tôm Hùm Bỏ Lò', price: 750000, category: 'Tôm' },
-    { id: 102, name: 'Cua Hoàng Đế Hấp', price: 900000, category: 'Cua' },
-    { id: 103, name: 'Mực Nhảy Nướng', price: 180000, category: 'Mực' },
-    { id: 104, name: 'Lẩu Hải Sản', price: 550000, category: 'Lẩu' },
-    { id: 105, name: 'Ốc Hương Quế', price: 120000, category: 'Ốc' },
+    { id: 101, name: 'Tôm Hùm Bỏ Lò', price: 750000, category: 'Tôm', image: '/assets/tôm hùm bỏ lò.jpg' },
+    { id: 102, name: 'Cua Hoàng Đế Hấp', price: 900000, category: 'Cua', image: '/assets/cua hoàng đế.jpg' },
+    { id: 103, name: 'Mực Nhảy Nướng', price: 180000, category: 'Mực', image: '/assets/mực nhảy nướng.jpg' },
+    { id: 104, name: 'Lẩu Hải Sản', price: 550000, category: 'Lẩu', image: '/assets/lẩu hải sản.jpg' },
+    { id: 105, name: 'Ốc Hương Quế', price: 120000, category: 'Ốc', image: '/assets/ốc hương quế.jpg' },
+    { id: 106, name: 'bia huda', price: 15000, category: 'Nước uống', image: '/assets/bia huda.jpg' },
+    { id: 107, name: 'coca', price: 13000, category: 'Nước uống', image: '/assets/cocacola.jpg' },
 ];
 
 // Hàm xử lý thêm món vào giỏ
@@ -36,7 +38,13 @@ export const calculateTotal = (cart) => {
 
 // Thêm logic xử lý danh sách món ăn
 export const handleAddProduct = (products, newProduct) => {
-    return [...products, { ...newProduct, id: Date.now() }]; // Tạo ID tạm bằng thời gian
+    const productWithImage = {
+        ...newProduct,
+        id: Date.now(),
+        // Nếu newProduct.image không có giá trị, dùng ảnh placeholder
+        image: newProduct.image || 'https://via.placeholder.com/150?text=No+Image'
+    };
+    return [...products, productWithImage];
 };
 
 //sửa món ăn

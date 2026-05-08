@@ -101,10 +101,32 @@ const MainLayout = ({table, children, user, setIsLoggedIn, currentShift, openShi
         return hasRole;
     });
 
-    const currentShiftBills = billHistory || []; 
-    const totalRevenueInShift = currentShiftBills.reduce((sum, bill) => sum + (bill.total || 0), 0);
+    // 1. LỌC HÓA ĐƠN CỦA CA HIỆN TẠI
+    const currentShiftBills = (billHistory || []).filter(bill => {
+        if (!currentShift || !currentShift.startTime) return false;
+        
+        // Giả sử hóa đơn của bạn có trường lưu thời gian tạo (ví dụ: createdAt, date, hoặc time)
+        // Bạn cần thay 'bill.createdAt' bằng đúng tên biến trong data của bạn
+        const billTime = new Date(bill.createdAt).getTime(); 
+        const shiftStartTime = new Date(currentShift.startTime).getTime();
+        
+        return billTime >= shiftStartTime;
+    });
+
+    // 2. TÁCH DOANH THU THEO PHƯƠNG THỨC THANH TOÁN
+    // Nhớ thay đổi 'paymentMethod', 'Tiền mặt', 'Chuyển khoản' khớp với key trong data của bạn nhé!
+    const cashBills = currentShiftBills.filter(bill => bill.paymentMethod === 'Tiền mặt'); 
+    const transferBills = currentShiftBills.filter(bill => bill.paymentMethod === 'Chuyển khoản'); 
+
+    const totalCashRevenue = cashBills.reduce((sum, bill) => sum + (bill.total || 0), 0);
+    const totalTransferRevenue = transferBills.reduce((sum, bill) => sum + (bill.total || 0), 0);
+
+    const totalRevenueInShift = totalCashRevenue + totalTransferRevenue;
     const totalBillsCount = currentShiftBills.length;
-    const expectedCash = (currentShift?.openingBalance || 0) + totalRevenueInShift;
+
+    // 3. TÍNH TIỀN LÝ THUYẾT TRONG KÉT
+    // QUAN TRỌNG: Tiền trong két lúc này CHỈ CỘNG DOANH THU TIỀN MẶT
+    const expectedCash = (currentShift?.openingBalance || 0) + totalCashRevenue;
 
 
     return (
@@ -212,6 +234,30 @@ const MainLayout = ({table, children, user, setIsLoggedIn, currentShift, openShi
                                         {totalRevenueInShift.toLocaleString()}đ
                                     </Title>
                                 </Col>
+                                {/* --- CHI TIẾT TIỀN MẶT --- */}
+                                <Col span={12}>
+                                    <Text type="secondary">Số HĐ Tiền mặt:</Text>
+                                    <Title level={5} style={{ margin: 0 }}>{cashBills.length} HĐ</Title>
+                                </Col>
+                                <Col span={12}>
+                                    <Text type="secondary">Thu Tiền mặt:</Text>
+                                    <Title level={5} style={{ margin: 0, color: '#fa8c16' }}>
+                                        {totalCashRevenue.toLocaleString()}đ
+                                    </Title>
+                                </Col>
+
+                                {/* --- CHI TIẾT CHUYỂN KHOẢN --- */}
+                                <Col span={12}>
+                                    <Text type="secondary">Số HĐ Chuyển khoản:</Text>
+                                    <Title level={5} style={{ margin: 0 }}>{transferBills.length} HĐ</Title>
+                                </Col>
+                                <Col span={12}>
+                                    <Text type="secondary">Thu Chuyển khoản:</Text>
+                                    <Title level={5} style={{ margin: 0, color: '#13c2c2' }}>
+                                        {totalTransferRevenue.toLocaleString()}đ
+                                    </Title>
+                                </Col>
+                                {/* --- KIỂM KÊ KÉT TIỀN --- */}
                                 <Col span={12}>
                                     <Text type="secondary">Tiền mặt đầu ca:</Text>
                                     <Title level={5} style={{ margin: 0 }}>
@@ -219,10 +265,11 @@ const MainLayout = ({table, children, user, setIsLoggedIn, currentShift, openShi
                                     </Title>
                                 </Col>
                                 <Col span={12}>
-                                    <Text type="secondary">Tổng tiền lý thuyết:</Text>
+                                    <Text type="secondary" strong>Tổng tiền mặt lý thuyết:</Text>
                                     <Title level={4} style={{ margin: 0, color: '#1890ff' }}>
                                         {expectedCash.toLocaleString()}đ
                                     </Title>
+                                    <Text type="secondary" style={{ fontSize: '12px' }}>(Đầu ca + Thu Tiền mặt)</Text>
                                 </Col>
                             </Row>
                         </div>

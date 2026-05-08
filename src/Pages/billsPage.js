@@ -134,6 +134,7 @@ const BillsPage = ({ billHistory, setBillHistory, currentShift, menuSeafood }) =
     const [reportData, setReportData] = useState({ title: '', total: 0, count: 0, dailyDetails: [] });
 
     // Hàm xử lý tạo báo cáo
+    // Hàm xử lý tạo báo cáo Ngày/Tháng
     const generateReport = (type) => {
         const now = new Date();
         let title = '';
@@ -143,24 +144,33 @@ const BillsPage = ({ billHistory, setBillHistory, currentShift, menuSeafood }) =
             const todayStr = now.toLocaleDateString('vi-VN');
             title = `BÁO CÁO DOANH THU NGÀY ${todayStr}`;
             filteredBills = billHistory.filter(bill => bill.time.includes(todayStr));
-            
+        } else {
+            const monthStr = `${now.getMonth() + 1}/${now.getFullYear()}`;
+            title = `BÁO CÁO CHI TIẾT THÁNG ${monthStr}`;
+            filteredBills = billHistory.filter(bill => bill.time.includes(monthStr));
+        }
+
+        // --- BẮT ĐẦU ĐOẠN TÍNH TOÁN TIỀN MẶT / CHUYỂN KHOẢN ---
+        // (Mặc định những hóa đơn cũ chưa có paymentMethod sẽ được tính là Tiền mặt)
+        const cashBills = filteredBills.filter(b => (b.paymentMethod || 'Tiền mặt') === 'Tiền mặt');
+        const transferBills = filteredBills.filter(b => b.paymentMethod === 'Chuyển khoản');
+
+        const cashTotal = cashBills.reduce((sum, b) => sum + b.total, 0);
+        const transferTotal = transferBills.reduce((sum, b) => sum + b.total, 0);
+        // --- KẾT THÚC ĐOẠN TÍNH TOÁN ---
+
+        if (type === 'day') {
             setReportData({
                 title,
                 total: filteredBills.reduce((sum, b) => sum + b.total, 0),
                 count: filteredBills.length,
-                details: filteredBills, // Hiện danh sách hóa đơn chi tiết
+                cashTotal, cashCount: cashBills.length,
+                transferTotal, transferCount: transferBills.length,
+                details: filteredBills,
                 type: 'day'
             });
         } else {
-            const monthStr = `${now.getMonth() + 1}/${now.getFullYear()}`;
-            title = `BÁO CÁO CHI TIẾT THÁNG ${monthStr}`;
-            
-            // 1. Lọc hóa đơn trong tháng
-            filteredBills = billHistory.filter(bill => bill.time.includes(monthStr));
-
-            // 2. Nhóm dữ liệu theo từng ngày
             const grouped = filteredBills.reduce((acc, bill) => {
-                // Tách lấy phần ngày từ chuỗi "14:30:00, 26/04/2026" -> lấy "26/04/2026"
                 const dateKey = bill.time.split(', ')[1] || bill.time.split(' ')[1]; 
                 if (!acc[dateKey]) {
                     acc[dateKey] = { date: dateKey, dailyTotal: 0, dailyCount: 0 };
@@ -170,14 +180,15 @@ const BillsPage = ({ billHistory, setBillHistory, currentShift, menuSeafood }) =
                 return acc;
             }, {});
 
-            // Chuyển object thành mảng và sắp xếp theo ngày giảm dần
             const dailyArray = Object.values(grouped).sort((a, b) => b.date.localeCompare(a.date));
 
             setReportData({
                 title,
                 total: filteredBills.reduce((sum, b) => sum + b.total, 0),
                 count: filteredBills.length,
-                dailyDetails: dailyArray, // Hiện danh sách tổng hợp từng ngày
+                cashTotal, cashCount: cashBills.length,
+                transferTotal, transferCount: transferBills.length,
+                dailyDetails: dailyArray,
                 type: 'month'
             });
         }
@@ -226,56 +237,53 @@ const BillsPage = ({ billHistory, setBillHistory, currentShift, menuSeafood }) =
     const [endDate, setEndDate] = useState(null);
     const [isRangePickerModalOpen, setIsRangePickerModalOpen] = useState(false);
 
+    // Hàm tạo báo cáo Tùy Chọn
     const generateCustomReport = (dates) => {
         if (!dates || !dates[0] || !dates[1]) return;
         const [start, end] = dates;
         
-        // 1. Lọc hóa đơn trong khoảng ngày
         const filteredBills = billHistory.filter(bill => {
             const dateStr = bill.time.split(' ')[1]; 
             const [d, m, y] = dateStr.split('/').map(Number);
             const billDate = dayjs(new Date(y, m - 1, d));
             return (billDate.isAfter(start, 'day') || billDate.isSame(start, 'day')) && 
-                (billDate.isBefore(end, 'day') || billDate.isSame(end, 'day'));
+                   (billDate.isBefore(end, 'day') || billDate.isSame(end, 'day'));
         });
 
-        // 2. Gom nhóm theo ngày (Để hiển thị giống báo cáo tháng)
+        // Tách Tiền mặt và Chuyển khoản
+        const cashBills = filteredBills.filter(b => (b.paymentMethod || 'Tiền mặt') === 'Tiền mặt');
+        const transferBills = filteredBills.filter(b => b.paymentMethod === 'Chuyển khoản');
+
         const dailyMap = {};
         let totalRevenue = 0;
-        let totalDiscount = 0;
 
         filteredBills.forEach(bill => {
-            const dateKey = bill.time.split(' ')[1]; // Lấy chuỗi "DD/MM/YYYY"
+            const dateKey = bill.time.split(' ')[1]; 
             totalRevenue += bill.total;
-            totalDiscount += (bill.total / (1 - (bill.discount || 0) / 100)) * ((bill.discount || 0) / 100);
 
             if (!dailyMap[dateKey]) {
-                dailyMap[dateKey] = {
-                    date: dateKey,
-                    dailyTotal: 0,
-                    dailyCount: 0,
-                    bills: [] // Lưu lại để nếu muốn xem chi tiết khi click vào dòng
-                };
+                dailyMap[dateKey] = { date: dateKey, dailyTotal: 0, dailyCount: 0, bills: [] };
             }
             dailyMap[dateKey].dailyTotal += bill.total;
             dailyMap[dateKey].dailyCount += 1;
             dailyMap[dateKey].bills.push(bill);
         });
 
-        // Chuyển object thành mảng và sắp xếp theo ngày
         const dailyDetails = Object.values(dailyMap).sort((a, b) => {
             return dayjs(a.date, 'DD/MM/YYYY').unix() - dayjs(b.date, 'DD/MM/YYYY').unix();
         });
 
-        // 3. Set dữ liệu vào state
         setReportData({
             title: `BÁO CÁO DOANH THU TÙY CHỌN`,
             subtitle: `Từ ${start.format('DD/MM/YYYY')} đến ${end.format('DD/MM/YYYY')}`,
             total: totalRevenue,
-            discount: totalDiscount,
             count: filteredBills.length,
-            dailyDetails: dailyDetails, // Dữ liệu đã gom nhóm
-            type: 'custom_grouped' // Đánh dấu loại báo cáo mới
+            cashTotal: cashBills.reduce((sum, b) => sum + b.total, 0),
+            cashCount: cashBills.length,
+            transferTotal: transferBills.reduce((sum, b) => sum + b.total, 0),
+            transferCount: transferBills.length,
+            dailyDetails: dailyDetails,
+            type: 'custom_grouped' 
         });
         setIsReportModalOpen(true);
     };
@@ -292,7 +300,6 @@ const BillsPage = ({ billHistory, setBillHistory, currentShift, menuSeafood }) =
 
     // 3. Tính toán các con số thống kê trên Card cũng chỉ dựa trên ngày hôm nay
     const totalBillsAmountToday = displayBills.reduce((sum, bill) => sum + bill.total, 0);
-    // const openingAmount = currentShift ? currentShift.openingBalance : 0;
     const totalRevenueToday = totalBillsAmountToday + openingAmount;
 
     return (
@@ -327,12 +334,31 @@ const BillsPage = ({ billHistory, setBillHistory, currentShift, menuSeafood }) =
                 ]}
             >
                 {/* 1. Khu vực Thống kê con số */}
-                <Row gutter={16} style={{ marginBottom: 20 }}>
+                {/* 1. Khu vực Thống kê con số */}
+                <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
                     <Col span={8}>
-                        <Statistic title="TỔNG DOANH THU" value={reportData.total} suffix="đ" valueStyle={{ color: '#3f8600', fontWeight: 'bold' }} />
+                        <Card bordered={false} style={{ background: '#e6f7ff', borderRadius: '8px' }}>
+                            <Statistic title="TỔNG DOANH THU" value={reportData.total} suffix="đ" valueStyle={{ color: '#1890ff', fontWeight: 'bold' }} />
+                            <div style={{ marginTop: 5, color: '#595959' }}>
+                                Số lượng: <b>{reportData.count}</b> HĐ
+                            </div>
+                        </Card>
                     </Col>
                     <Col span={8}>
-                        <Statistic title="SỐ HÓA ĐƠN" value={reportData.count} suffix="HĐ" />
+                        <Card bordered={false} style={{ background: '#fff7e6', borderRadius: '8px' }}>
+                            <Statistic title="THU TIỀN MẶT" value={reportData.cashTotal} suffix="đ" valueStyle={{ color: '#fa8c16', fontWeight: 'bold' }} />
+                            <div style={{ marginTop: 5, color: '#595959' }}>
+                                Số lượng: <b>{reportData.cashCount}</b> HĐ
+                            </div>
+                        </Card>
+                    </Col>
+                    <Col span={8}>
+                        <Card bordered={false} style={{ background: '#e6fffb', borderRadius: '8px' }}>
+                            <Statistic title="THU CHUYỂN KHOẢN" value={reportData.transferTotal} suffix="đ" valueStyle={{ color: '#13c2c2', fontWeight: 'bold' }} />
+                            <div style={{ marginTop: 5, color: '#595959' }}>
+                                Số lượng: <b>{reportData.transferCount}</b> HĐ
+                            </div>
+                        </Card>
                     </Col>
                 </Row>
 
@@ -370,6 +396,11 @@ const BillsPage = ({ billHistory, setBillHistory, currentShift, menuSeafood }) =
                             { title: 'Mã HĐ', dataIndex: 'id', render: (id) => id ? `#${id.toString().slice(-6)}` : 'N/A' },
                             { title: 'Bàn', dataIndex: 'tableName' },
                             { title: 'Thời gian', dataIndex: 'time' },
+                            { 
+                                title: 'Thanh toán', 
+                                dataIndex: 'paymentMethod', 
+                                render: (method) => <Tag color={method === 'Chuyển khoản' ? 'cyan' : 'orange'}>{method || 'Tiền mặt'}</Tag>
+                            },
                             { 
                                 title: 'Tổng tiền', 
                                 dataIndex: 'total', 

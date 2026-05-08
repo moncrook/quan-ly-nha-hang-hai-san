@@ -23,18 +23,26 @@ const ProductPage = ({ products, setProducts }) => {
 
         const [imageUrl, setImageUrl] = useState(''); // State lưu ảnh tạm thời khi đang chọn
 
+        // 1. Sửa lại hàm handleChangeImage để bắt lỗi tốt hơn
         const handleChangeImage = (info) => {
-            // Ant Design bọc file trong originFileObj
-            const file = info.file.originFileObj; 
+            // Lấy file cuối cùng từ danh sách (nếu người dùng chọn nhiều lần)
+            const file = info.file.originFileObj || info.file; 
             
             if (file) {
+                // Kiểm tra định dạng file
+                const isJpgOrPng = file.type === 'image/jpeg' || file.type === 'image/png';
+                if (!isJpgOrPng) {
+                    message.error('Bạn chỉ có thể tải lên định dạng JPG/PNG!');
+                    return;
+                }
+
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     const result = e.target.result;
-                    setImageUrl(result); // Cập nhật để hiển thị ảnh preview
-                    form.setFieldsValue({ image: result }); // Lưu chuỗi ảnh vào Form để khi bấm Save nó có dữ liệu
+                    setImageUrl(result); // Hiển thị preview ngay lập tức
+                    form.setFieldsValue({ image: result }); // Gán chuỗi Base64 vào Form
                 };
-                reader.readAsDataURL(file); // Bắt đầu đọc file
+                reader.readAsDataURL(file);
             }
         };
 
@@ -61,10 +69,10 @@ const ProductPage = ({ products, setProducts }) => {
         };
 
         if (editingProduct) {
-            setProducts(handleEditProduct(products, { ...editingProduct, ...values }));
+            setProducts(handleEditProduct(products, { ...editingProduct, ...productData }));
             message.success("Đã cập nhật món ăn");
         } else {
-            setProducts(handleAddProduct(products, values));
+            setProducts(handleAddProduct(products, productData));
             message.success(" đã thêm món mới thành công");
         }
         setIsModalOpen(false);
@@ -145,8 +153,9 @@ const ProductPage = ({ products, setProducts }) => {
                                 const matchCategory = selectedCategory === 'Tất cả' || food.category === selectedCategory;
                                 
                                 // 2. Lọc theo Tên món (Search Text) - Chuyển cả hai về chữ thường để so sánh chính xác
-                                const matchSearch = food.name.toLowerCase().includes(searchText.toLowerCase());
-                                
+                               const matchSearch =
+                                    food.name.toLowerCase().includes(searchText.toLowerCase()) ||
+                                    food.category.toLowerCase().includes(searchText.toLowerCase());
                                 return matchCategory && matchSearch;
                             })} 
                             columns={columns} 
@@ -213,27 +222,30 @@ const ProductPage = ({ products, setProducts }) => {
                                 style={{ width: '100%' }} 
                                 min={0}
                                 formatter={val => `${val}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                                parser={val => val.replace(/\$\s?|(,*)/g, '')}
+                                parser={(val) => val ? val.replace(/\$\s?|(,*)/g, '') : ''}
                             />
                         </Form.Item>
 
                         <Form.Item 
                             name="image" 
                             label="Hình ảnh món ăn"
+                            // Quan trọng: Đừng để Form tự quản lý value của Upload nếu bạn dùng Base64
                         >
                             <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                                 <Upload
                                     name="avatar"
                                     listType="picture-card"
                                     showUploadList={false}
-                                    beforeUpload={() => false} // Chặn không cho upload lên server thật
+                                    beforeUpload={() => false} // Ngăn upload lên server
+                                    accept="image/*"
                                     onChange={handleChangeImage}
                                 >
-                                    {imageUrl || form.getFieldValue('image') ? (
+                                    {/* Ưu tiên hiển thị imageUrl từ state để mượt mà hơn */}
+                                    {imageUrl ? (
                                         <img 
-                                            src={imageUrl || form.getFieldValue('image')} 
+                                            src={imageUrl} 
                                             alt="avatar" 
-                                            style={{ width: '100%', borderRadius: '8px' }} 
+                                            style={{ width: '100%', borderRadius: '8px', height: '100%', objectFit: 'cover' }} 
                                         />
                                     ) : (
                                         <div>
@@ -243,8 +255,7 @@ const ProductPage = ({ products, setProducts }) => {
                                     )}
                                 </Upload>
                                 
-                                {/* Nút để xóa ảnh hiện tại nếu chọn nhầm */}
-                                {(imageUrl || form.getFieldValue('image')) && (
+                                {imageUrl && (
                                     <Button size="small" danger onClick={() => {
                                         setImageUrl('');
                                         form.setFieldsValue({ image: '' });
