@@ -195,6 +195,7 @@ const App = () => {
         const openShift = (openingCash) => {
             setCurrentShift({
                 startTime: new Date().toLocaleString('vi-VN'),
+                timestamp: Date.now(),
                 openingBalance: openingCash,
                 cashRevenue: 0, // Tiền mặt thu được từ các hóa đơn
                 status: 'OPEN'

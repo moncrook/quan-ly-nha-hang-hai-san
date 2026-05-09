@@ -103,19 +103,16 @@ const MainLayout = ({table, children, user, setIsLoggedIn, currentShift, openShi
 
     // 1. LỌC HÓA ĐƠN CỦA CA HIỆN TẠI
     const currentShiftBills = (billHistory || []).filter(bill => {
-        if (!currentShift || !currentShift.startTime) return false;
+        if (!currentShift || !currentShift.timestamp) return false;
         
-        // Giả sử hóa đơn của bạn có trường lưu thời gian tạo (ví dụ: createdAt, date, hoặc time)
-        // Bạn cần thay 'bill.createdAt' bằng đúng tên biến trong data của bạn
-        const billTime = new Date(bill.createdAt).getTime(); 
-        const shiftStartTime = new Date(currentShift.startTime).getTime();
-        
-        return billTime >= shiftStartTime;
+        // Cả bill.id và currentShift.timestamp đều đang dùng chung hàm Date.now()
+        // Nên chỉ cần so sánh trực tiếp 2 số này với nhau:
+        return bill.id >= currentShift.timestamp;
     });
 
     // 2. TÁCH DOANH THU THEO PHƯƠNG THỨC THANH TOÁN
-    // Nhớ thay đổi 'paymentMethod', 'Tiền mặt', 'Chuyển khoản' khớp với key trong data của bạn nhé!
-    const cashBills = currentShiftBills.filter(bill => bill.paymentMethod === 'Tiền mặt'); 
+    // (Đảm bảo giá trị 'Tiền mặt', 'Chuyển khoản' khớp với data thực tế lúc thanh toán nhé)
+    const cashBills = currentShiftBills.filter(bill => (bill.paymentMethod || 'Tiền mặt') === 'Tiền mặt'); 
     const transferBills = currentShiftBills.filter(bill => bill.paymentMethod === 'Chuyển khoản'); 
 
     const totalCashRevenue = cashBills.reduce((sum, bill) => sum + (bill.total || 0), 0);
@@ -125,7 +122,6 @@ const MainLayout = ({table, children, user, setIsLoggedIn, currentShift, openShi
     const totalBillsCount = currentShiftBills.length;
 
     // 3. TÍNH TIỀN LÝ THUYẾT TRONG KÉT
-    // QUAN TRỌNG: Tiền trong két lúc này CHỈ CỘNG DOANH THU TIỀN MẶT
     const expectedCash = (currentShift?.openingBalance || 0) + totalCashRevenue;
 
 
