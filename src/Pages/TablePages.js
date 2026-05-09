@@ -104,6 +104,9 @@ const TablePage = ({ table, setTable, menuSeafood, user, setBillHistory, current
     // modal thanh toán bằng tiền mặt
     const [tienMatModalOpen, setTienMatModalOpen]=useState(false)
 
+    // Modal thanh toán bằng mã QR
+    const [qrModalOpen, setQrModalOpen] = useState(false);
+
     
     const menuItems = [
         {
@@ -187,33 +190,61 @@ const handleRemoveItem = (foodId) => {
     message.info("Đã xóa món");
 };
 
-const handleThanhToan = () => {
+    // const handleThanhToan = () => {
 
-    const newBill={...billData,id: Date.now()};
-    
-    // 1. Cập nhật dữ liệu bàn về trạng thái trống (Dùng tableData từ Props)
-    const updatedTables = table.map(t => 
-        t.id === selectedTable?.id ? { ...t, status: 'available', orderItems: [] } : t
-    );
+    //     const newBill={...billData,id: Date.now()};
+        
+    //     // 1. Cập nhật dữ liệu bàn về trạng thái trống (Dùng tableData từ Props)
+    //     const updatedTables = table.map(t => 
+    //         t.id === selectedTable?.id ? { ...t, status: 'available', orderItems: [] } : t
+    //     );
 
-    setBillHistory(prev => [newBill,...prev])
-    setTable(updatedTables);
+    //     setBillHistory(prev => [newBill,...prev])
+    //     setTable(updatedTables);
 
-    // 1. Thực hiện logic lưu Database / Cập nhật trạng thái bàn ở đây
-    console.log("Đã thanh toán cho bàn:", selectedTable.name);
+    //     // 1. Thực hiện logic lưu Database / Cập nhật trạng thái bàn ở đây
+    //     console.log("Đã thanh toán cho bàn:", selectedTable.name);
 
 
-    // 2. Đóng toàn bộ các Modal
-    setTienMatModalOpen(false);
-    setMethodModalOpen(false);
-    setIsBillModalOpen(false);
-    setOpen(false);
-    
-    // 3. Reset lại tiền khách đưa cho lần sau
-    setCustomerCash(0);
-    
-    message.success("Thanh toán thành công!");
-};
+    //     // 2. Đóng toàn bộ các Modal
+    //     setTienMatModalOpen(false);
+    //     setMethodModalOpen(false);
+    //     setIsBillModalOpen(false);
+    //     setOpen(false);
+        
+    //     // 3. Reset lại tiền khách đưa cho lần sau
+    //     setCustomerCash(0);
+        
+    //     message.success("Thanh toán thành công!");
+    // };
+
+    const handleThanhToan = (method = 'Tiền mặt') => {
+
+        // 👉 THÊM paymentMethod VÀO ĐÂY ĐỂ LƯU LỊCH SỬ
+        const newBill = { ...billData, id: Date.now(), paymentMethod: method };
+        
+        // 1. Cập nhật dữ liệu bàn về trạng thái trống
+        const updatedTables = table.map(t => 
+            t.id === selectedTable?.id ? { ...t, status: 'available', orderItems: [] } : t
+        );
+
+        setBillHistory(prev => [newBill, ...prev])
+        setTable(updatedTables);
+
+        console.log(`Đã thanh toán cho bàn: ${selectedTable.name} bằng ${method}`);
+
+        // 2. Đóng toàn bộ các Modal
+        setTienMatModalOpen(false);
+        setQrModalOpen(false); // Đóng thêm modal QR
+        setMethodModalOpen(false);
+        setIsBillModalOpen(false);
+        setOpen(false);
+        
+        // 3. Reset lại tiền khách đưa cho lần sau
+        setCustomerCash(0);
+        
+        message.success(`Thanh toán ${method} thành công!`);
+    };
 
 const ChuyenBan= (tuBan, denBan)=>{
     const updateTable=table.map(t =>{
@@ -392,7 +423,7 @@ const showModal = (product = null) => {
     const [tableNote, setTableNote] = useState(''); // Lưu ghi chú chung của bàn
 
     return (
-        <div>
+        <div style={{ width: '100%', padding: '0 10px',}}>
             <div style={{display: 'flex', justifyContent: 'space-between'}}>
                 <Title level={2} style={{ color: '#1890ff' }}>🍽️ SƠ ĐỒ BÀN ĂN</Title>
                 {/* Kiểm tra role: Chỉ render cụm nút này nếu user là ADMIN hoặc MANAGER */}
@@ -673,8 +704,8 @@ const showModal = (product = null) => {
                             ghost
                             icon={<QrcodeOutlined />}
                             onClick={() => {
-                                // Logic xử lý chuyển khoản ở đây
-                                handleThanhToan(); 
+                                setMethodModalOpen(false); // Đóng modal chọn phương thức
+                                setQrModalOpen(true);      // Mở modal quét mã QR
                             }}
                         >
                             CHUYỂN KHOẢN (QR)
@@ -689,7 +720,7 @@ const showModal = (product = null) => {
                     onCancel={() => {setTienMatModalOpen(false);
                         setCustomerCash(0); // Reset lại tiền
                     }}
-                    onOk={handleThanhToan}
+                    onOk={() => handleThanhToan('Tiền mặt')}
                     okText="Xác nhận thanh toán"
                     cancelText="Quay lại"
                     // Chỉ cho xác nhận khi khách đưa đủ tiền
@@ -739,85 +770,57 @@ const showModal = (product = null) => {
                         )}
                     </div>
                 </Modal>
-
-                  {/* nhập số tiền khách đưa và trả lại */}
-                {/* <Modal 
-                    title={`Thanh toán bằng tiền mặt - ${selectedTable?.name}`}
-                    open={tienMatModalOpen}
-                    onCancel={() => setTienMatModalOpen(false)}
-                    centered
-                    footer={null} // ❗ tắt nút mặc định (OK, Cancel)
-                >
-                    
-                    <div style={{ marginTop: '20px', padding: '15px', background: '#e6f7ff', borderRadius: '8px' }}>
-                        
-                        <div style={{ borderTop: '1px dashed #000', marginTop: '10px', paddingTop: '10px' }}>
-                            <p>Tạm tính: {billData?.subTotal?.toLocaleString()}đ</p>
-                            <p>Giảm giá: {billData?.discount || 0}% (-{ (billData?.subTotal * billData.discount / 100).toLocaleString() }đ)</p>
-                            <Title level={3} textAlign="right">TỔNG CỘNG: {billData?.total?.toLocaleString()}đ</Title>
-                        </div>
-                        <div style={{ marginBottom: '10px' }}>
-                            <Text strong>Tiền khách đưa:</Text>
-                            <InputNumber
-                                style={{ width: '100%' }}
-                                size="large"
-                                formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                                parser={value => value.replace(/\$\s?|(,*)/g, '')}
-                                onChange={(val) => setCustomerCash(val || 0)}
-                            />
-                        </div>
-                        <div>
-                            <Text strong>Tiền thối lại:</Text>
-                            <Title level={4} style={{ color: '#52c41a', margin: 0 }}>
-                                {customerCash - billData?.total > 0 
-                                    ? (customerCash - billData?.total).toLocaleString() 
-                                    : 0}đ
-                            </Title>
-                        </div>
+                
+                {/* 3. MODAL HIỂN THỊ MÃ QR CHUYỂN KHOẢN */}
+                <Modal
+                    title={<Title level={4} style={{ margin: 0, color: '#1890ff', textAlign: 'center' }}>QUÉT MÃ THANH TOÁN</Title>}
+                    open={qrModalOpen}
+                    onCancel={() => setQrModalOpen(false)}
+                    footer={[
+                        <Button key="back" onClick={() => {
+                            setQrModalOpen(false);
+                            setMethodModalOpen(true); // Quay lại bước chọn phương thức
+                        }}>
+                            Quay lại
+                        </Button>,
                         <Button 
+                            key="confirm" 
                             type="primary" 
-                            danger 
-                            size="large" 
-                            style={{ flex: 1, height: '80px' }}
-                            // Chỉ cho bấm Thanh toán khi khách đưa đủ tiền
-                            disabled={!customerCash || customerCash < (billData?.total || 0)}
-                            onClick={handleThanhToan}
+                            onClick={() => handleThanhToan('Chuyển khoản')} // Gọi hàm với chữ 'Chuyển khoản'
+                            size="large"
                         >
-                            Xác nhận thanh toán & trả bàn
+                            Xác nhận đã nhận tiền
                         </Button>
+                    ]}
+                    centered
+                >
+                    <div style={{ textAlign: 'center', padding: '10px 0' }}>
+                        <Text style={{ fontSize: '16px' }}>Tổng số tiền cần thanh toán:</Text>
+                        <Title level={2} style={{ margin: '5px 0 20px 0', color: '#f5222d' }}>
+                            {billData?.total?.toLocaleString()}đ
+                        </Title>
+                        
+                        {/* ⚠️ MÃ QR TẠM THỜI - BẠN CÓ THỂ THAY BẰNG ẢNH MÃ QR CỦA BẠN VÀO THẺ <img> */}
+                        <div style={{ 
+                            width: '250px', height: '250px', background: '#f0f0f0', 
+                            margin: '0 auto', display: 'flex', alignItems: 'center', 
+                            justifyContent: 'center', border: '2px dashed #1890ff', borderRadius: '12px' 
+                        }}>
+                            <div style={{ textAlign: 'center' }}>
+                                 {/* NẾU BẠN CÓ ẢNH QR CỦA NGÂN HÀNG THÌ DÙNG CODE NÀY: */}
+                                <img src="/assets/anhQR.jpg" alt="QR" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                            </div>
+                        </div>
+
+                        <div style={{ marginTop: '20px', background: '#e6f7ff', padding: '15px', borderRadius: '8px', textAlign: 'left' }}>
+                            <p style={{ margin: '5px 0' }}><b>Ngân hàng:</b> MBBANK</p>
+                            <p style={{ margin: '5px 0' }}><b>Số tài khoản:</b> 0357016241</p>
+                            <p style={{ margin: '5px 0' }}><b>Chủ tài khoản:</b> PHAN XUAN NHAN</p>
+                            <p style={{ margin: '5px 0' }}><b>Nội dung CK:</b> Thanh toan {selectedTable?.name}</p>
+                        </div>
                     </div>
                 </Modal>
-                 */}
-                    {/* Chọn phuong thức thanh toán */}
-                {/* <Modal
-                    title={`Hãy chọn phương thức thanh toán - ${selectedTable?.name}`}
-                    open={methodModalOpen}
-                    onCancel={() => setMethodModalOpen(false)}
-                    footer={null} // Không dùng nút mặc định của Modal
-                    centered
-                >
-                    <div style={{ display: 'flex', gap: '15px', padding: '20px 0' }}>
-                        <Button 
-                            type="primary" 
-                            size="large" 
-                            style={{ flex: 1, height: '80px', backgroundColor: '#faad14' }}
-                            onClick={() => setTienMatModalOpen(true)}
-                        >
-                            TIỀN MẶT
-                        </Button> 
-                        <Button 
-                            type="primary" 
-                            danger 
-                            size="large" 
-                            style={{ flex: 1, height: '80px' }}
-                            // disabled={selectedTable?.status==='reserved'}
-                            // onClick={selectedTable?.status==='reserved'? ()=>HuyDatBan(selectedTable) : handleDatBan }
-                        >
-                            CHUYỂN KHOẢN
-                        </Button>
-                    </div>
-                </Modal> */}
-                
+
                 <Modal 
                     title={`Thông tin đặt bàn - ${selectedTable?.name}`}
                     open={openBookingTable}

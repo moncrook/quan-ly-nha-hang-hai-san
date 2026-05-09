@@ -91,7 +91,7 @@ const App = () => {
             time: "18:15:20 3/5/2026",
             staff: "Trần Thị B",
             discount: 5,
-            paymentMethod: "Thẻ",
+            paymentMethod: "Chuyển khoản",
             note: "Ít cay",
             orderItems: [
                 { id: 5, name: "Lẩu hải sản", price: 500000, qty: 1 },
