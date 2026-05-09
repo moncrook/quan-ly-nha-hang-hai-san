@@ -24,7 +24,6 @@ import { menuSeafood } from './Untils/handleTable';
 const initialEmployees = [
     { id: 1, username: 'nhanadmin', password: '123', name: 'Phan Xuân Nhạn', role: 'ADMIN' },
     { id: 2, username: 'staff01', password: '123', name: 'Nguyễn Văn A', role: 'STAFF' },
-    { id: 3, username: 'cashier01', password: '123', name: 'Trần Thị B', role: 'CASHIER' },
 ];
 
 const App = () => {
@@ -161,19 +160,19 @@ const App = () => {
                 key: 'tables',
                 label: 'Sơ đồ bàn',
                 icon: <TableOutlined />,
-                roles: ['STAFF', 'CASHIER', 'ADMIN'], // Tất cả đều thấy
+                roles: ['STAFF', 'ADMIN'], // Tất cả đều thấy
             },
             {
                 key: 'booking',
                 label: 'Đặt bàn',
                 icon: <CalendarOutlined />,
-                roles: ['STAFF', 'CASHIER', 'ADMIN'], // Tất cả đều thấy
+                roles: ['STAFF', 'ADMIN'], // Tất cả đều thấy
             },
             {
                 key: 'bills',
                 label: 'Quản lý hóa đơn',
                 icon: <FileTextOutlined />,
-                roles: ['CASHIER', 'ADMIN'], // Nhân viên phục vụ không thấy
+                roles: [ 'ADMIN'], // Nhân viên phục vụ không thấy
             },
             {
                 key: 'products',
@@ -185,7 +184,7 @@ const App = () => {
                 key: 'logout',
                 label: 'Đăng xuất',
                 icon: <LogoutOutlined />,
-                roles: ['STAFF', 'CASHIER', 'ADMIN'],
+                roles: ['STAFF', 'ADMIN'],
             },
             ];
 
