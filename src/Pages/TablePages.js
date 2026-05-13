@@ -190,33 +190,6 @@ const handleRemoveItem = (foodId) => {
     message.info("Đã xóa món");
 };
 
-    // const handleThanhToan = () => {
-
-    //     const newBill={...billData,id: Date.now()};
-        
-    //     // 1. Cập nhật dữ liệu bàn về trạng thái trống (Dùng tableData từ Props)
-    //     const updatedTables = table.map(t => 
-    //         t.id === selectedTable?.id ? { ...t, status: 'available', orderItems: [] } : t
-    //     );
-
-    //     setBillHistory(prev => [newBill,...prev])
-    //     setTable(updatedTables);
-
-    //     // 1. Thực hiện logic lưu Database / Cập nhật trạng thái bàn ở đây
-    //     console.log("Đã thanh toán cho bàn:", selectedTable.name);
-
-
-    //     // 2. Đóng toàn bộ các Modal
-    //     setTienMatModalOpen(false);
-    //     setMethodModalOpen(false);
-    //     setIsBillModalOpen(false);
-    //     setOpen(false);
-        
-    //     // 3. Reset lại tiền khách đưa cho lần sau
-    //     setCustomerCash(0);
-        
-    //     message.success("Thanh toán thành công!");
-    // };
 
     const handleThanhToan = (method = 'Tiền mặt') => {
 
@@ -277,7 +250,7 @@ const handleShowBill = () => {
         discount: discount,
         total: finalTotal,
         time: new Date().toLocaleString('vi-VN'),
-        staff: "Phan Xuân Nhẫn",
+        staff: user?.name || "Nhân viên",
         note: tableNote, // 👉 Thêm dòng này để truyền sang hóa đơn
     };
     setBillData(data);
@@ -312,7 +285,7 @@ const handleSelectPayment = () => {
         orderItems: cart,
         total: calculateTotal(cart),
         time: new Date().toLocaleString('vi-VN'),
-        staff: "Phan Xuân Nhạn"
+        staff: user?.name || "Nhân viên"
     };
     
     setBillData(data);
@@ -623,16 +596,15 @@ const showModal = (product = null) => {
                     footer={[
                         <Button key="back" onClick={() => setIsBillModalOpen(false)}>Quay lại</Button>,
                         // CHỈ HIỆN NÚT THANH TOÁN NẾU LÀ THU NGÂN HOẶC QUẢN LÝ
-                        (user.role === 'CASHIER' || user.role === 'ADMIN') && (
-                            <Button 
-                                key="pay" 
-                                type="primary" 
-                                danger
-                                onClick={() => setMethodModalOpen(true)} 
-                            >
-                                Thanh Toán
-                            </Button>
-                        ),
+                        <Button 
+                            key="pay" 
+                            type="primary" 
+                            danger
+                            onClick={() => setMethodModalOpen(true)} 
+                        >
+                            Thanh Toán
+                        </Button>
+                        ,
                         <Button
                             onClick={handlePrintBill}
                         >
@@ -1016,17 +988,6 @@ const showModal = (product = null) => {
                             >
                                 XEM HÓA ĐƠN & THANH TOÁN    
                             </Button>
-
-                            {/* <Button style={{width: '50%'}}
-                                type="primary" 
-                                // danger 
-                                // block 
-                                size="large" 
-                                onClick={handleShowBill}
-                                disabled={cart.length === 0}
-                            >
-                                IN HÓA ĐƠN TẠM TÍNH
-                            </Button> */}
                             <Button style={{top: '10px'}} type="primary" block onClick={onConfirmOrder}>Xác nhận</Button>
                     </Col>
                 </Row>

@@ -50,19 +50,19 @@ const MainLayout = ({table, children, user, setIsLoggedIn, currentShift, openShi
             key: '1', 
             icon: <DesktopOutlined />, 
             label: <Link to="/table">Sơ đồ bàn</Link>,
-            roles: ['STAFF', 'CASHIER', 'ADMIN'] 
+            roles: ['STAFF', 'ADMIN'] 
         },
         { 
             key: '3', 
             icon: <CalendarOutlined />, 
             label: <Link to="/booking">Quản Lý Đặt Bàn</Link>,
-            roles: ['STAFF', 'CASHIER', 'ADMIN'] 
+            roles: ['STAFF', 'ADMIN'] 
         },
         { 
             key: '4', 
             icon: <FileTextOutlined />, 
             label: <Link to="/bills">Quản Lý Hóa Đơn</Link>,
-            roles: ['CASHIER', 'ADMIN'] // Phục vụ (STAFF) sẽ bị lọc mất cái này
+            roles: [ 'ADMIN'] // Phục vụ (STAFF) sẽ bị lọc mất cái này
         },
         { 
             key: '2', 
