@@ -31,14 +31,26 @@ const EmployeePage = ({ employees, setEmployees }) => {
         setEditingEmployee(null); // Reset lại trạng thái
     };
 
-    const showModal = (valua = null) => {
-        setEditingEmployee(valua);
-        if (valua) {
-            form.setFieldsValue(valua); // Đổ dữ liệu cũ vào form nếu là Sửa
+    const showModal = (record = null) => {
+        if (record) {
+            setEditingEmployee(record);
+            form.setFieldsValue({
+                ...record, // Đổ toàn bộ dữ liệu từ record vào các trường tương ứng trong Form
+            });
         } else {
-            form.resetFields(); // Xóa trắng form nếu là Thêm mới
+            setEditingEmployee(null);
+            form.resetFields();
         }
         setIsModalOpen(true);
+    };
+
+    const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+    const [viewingEmployee, setViewingEmployee] = useState(null);
+
+    // Hàm để mở Modal xem chi tiết
+    const showViewModal = (record) => {
+        setViewingEmployee(record);
+        setIsViewModalOpen(true);
     };
 
     return (
@@ -72,7 +84,7 @@ const EmployeePage = ({ employees, setEmployees }) => {
                         title: 'Thao tác', 
                         key: 'action',
                         render: (_, record) =>(
-                            <Space>
+                            <Space onClick={(e) => e.stopPropagation()}>
                                 <Button icon={<EditOutlined />} onClick={() => showModal(record)}>Sửa</Button>
                                 <Popconfirm
                                     title="Xác nhận xóa nhân viên"
@@ -91,6 +103,10 @@ const EmployeePage = ({ employees, setEmployees }) => {
                         )
                     }
                 ]} 
+                onRow={(record) => ({
+                    onClick: () => showViewModal(record), // Click vào dòng để XEM
+                    style: { cursor: 'pointer' }
+                })}
             />
 
             {/* Modal chứa Form: Thêm/Sửa */}
@@ -107,7 +123,11 @@ const EmployeePage = ({ employees, setEmployees }) => {
             >
                 <Form form={form} layout="vertical" onFinish={handleSaveEmployee}>
                     {/* Đổi name="ID" thành "cccd" để không bị trùng với "id" hệ thống sinh ra */}
-                    <Form.Item name="cccd" label="Căn Cước Công Dân" rules={[{ required: true, message: 'Vui lòng nhập CCCD' }]}>
+                    <Form.Item 
+                        name="cccd" 
+                        label="Căn Cước Công Dân" 
+                        rules={[{ required: true, message: 'Vui lòng nhập CCCD' }]}
+                    >
                         <Input placeholder="046xxxxxx" />
                     </Form.Item>
                     
@@ -143,6 +163,30 @@ const EmployeePage = ({ employees, setEmployees }) => {
                         </Select>
                     </Form.Item>
                 </Form>
+            </Modal>
+            <Modal
+                title="CHI TIẾT NHÂN VIÊN"
+                open={isViewModalOpen}
+                onCancel={() => setIsViewModalOpen(false)}
+                footer={[
+                    <Button key="close" type="primary" onClick={() => setIsViewModalOpen(false)}>
+                        Đóng
+                    </Button>
+                ]}
+                width={600}
+            >
+                {viewingEmployee && (
+                    <div style={{ padding: '10px 0' }}>
+                        <p><b>Họ và tên:</b> {viewingEmployee.name}</p>
+                        <p><b>CCCD:</b> {viewingEmployee.cccd}</p>
+                        <p><b>Giới tính:</b> {viewingEmployee.sex}</p>
+                        <p><b>Tên đăng nhập:</b> {viewingEmployee.username}</p>
+                        <p><b>Quyền hạn:</b> {viewingEmployee.role === 'ADMIN' ? 'Quản lý' : 'Nhân viên'}</p>
+                        <p><b>Địa chỉ:</b> {viewingEmployee.address || "Chưa cập nhật"}</p>
+                        <hr />
+                        <p style={{ color: 'gray', fontSize: '12px' }}>ID hệ thống: {viewingEmployee.id}</p>
+                    </div>
+                )}
             </Modal>
         </div>
     );

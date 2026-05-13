@@ -22,8 +22,8 @@ import { menuSeafood } from './Untils/handleTable';
 
 
 const initialEmployees = [
-    { id: 1, username: 'nhanadmin', password: '123', name: 'Phan Xuân Nhạn', role: 'ADMIN' },
-    { id: 2, username: 'staff01', password: '123', name: 'Nguyễn Văn A', role: 'STAFF' },
+    { id: 1, username: 'admin', password: '123', name: 'Phan Xuân Nhạn', role: 'ADMIN', cccd: '35535325', sex: 'Nam', address:'' },
+    { id: 2, username: 'staff01', password: '123', name: 'Nguyễn Văn A', role: 'STAFF', cccd: '54416855638', sex: 'Nam', address:'' },
 ];
 
 const App = () => {
